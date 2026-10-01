@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "garage",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--serve=8765"],
+      "port": 8765
+    }
+  ]
+}

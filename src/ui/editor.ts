@@ -1,0 +1,95 @@
+// ── source editor: tabs, breadcrumbs, CodeMirror or a binary preview ──────
+import { closeTab, showFile } from '../actions.ts';
+import { IMAGES } from '../config.ts';
+import { base, extOf, readBytes, readText, writeFile } from '../project/fs.ts';
+import { roleOf } from '../project/pipeline.ts';
+import { isText } from '../project/zip.ts';
+import { emit, on, state } from '../state.ts';
+import { createEditor, type EditorKind } from './codemirror.ts';
+import { $, el } from './dom.ts';
+import { icon } from './icons.ts';
+
+let editor: ReturnType<typeof createEditor>;
+
+function editorKind(p: string): EditorKind {
+  const e = extOf(p), n = base(p);
+  if (e === 'toml') return 'toml';
+  if (e === 'css') return 'css';
+  if (e === 'py') return 'python';
+  if (/\.html\.j2$|\.html?$/.test(n)) return 'html';
+  if (e === 'j2') return 'jinja';
+  if (['xml', 'odd', 'tei', 'xsd', 'rng', 'xsl', 'xslt', 'svg', 'xhtml'].includes(e)) return 'xml';
+  return '';
+}
+
+function render(): void {
+  const p = state.file, text = !p || isText(p);
+  $('src').hidden = !text; $('preview').hidden = text;
+  if (p && text) editor.setValue(readText(p), editorKind(p));
+  else if (p) showBinary(p);
+  renderTabs(); renderKind();
+}
+
+/** Pick up changes made outside the editor, e.g. an upload or the template menu. */
+function reload(): void {
+  const p = state.file;
+  if (p && isText(p) && readText(p) !== editor.getValue()) editor.setValue(readText(p), editorKind(p));
+  renderTabs(); renderKind();
+}
+
+function showBinary(p: string): void {
+  const pv = $('preview'), bytes = readBytes(p);
+  pv.replaceChildren();
+  if (IMAGES.has(extOf(p))) {
+    pv.append(el('img', { src: URL.createObjectURL(new Blob([bytes as BlobPart])), alt: base(p) }));
+  } else {
+    const card = el('div', { className: 'filecard' });
+    card.append(
+      el('div', { className: 'ico', textContent: '📄' }),
+      el('div', { className: 'name', textContent: base(p) }),
+      el('div', { className: 'size', textContent: (bytes.length / 1024).toFixed(1) + ' KB · binary file' }),
+    );
+    pv.append(card);
+  }
+}
+
+function renderTabs(): void {
+  $('tabs').replaceChildren(...state.open.map(p => {
+    const b = el('button', { className: 'tab', title: p });
+    b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(p === state.file));
+    b.append(el('span', { className: 'ico', textContent: icon(p) }), el('span', { className: 'lbl', textContent: base(p) }),
+      el('span', { className: 'x', title: 'Close', textContent: '×' }));
+    b.onclick = e => { if ((e.target as Element).classList.contains('x')) closeTab(p); else showFile(p); };
+    return b;
+  }));
+}
+
+function renderKind(): void {
+  const p = state.file, crumbs = $('crumbs'), role = $('role');
+  crumbs.replaceChildren(); role.hidden = true;
+  if (!p) { $('kind').textContent = ''; return; }
+  const parts = p.split('/');
+  parts.forEach((seg, i) => {
+    crumbs.append(el('span', { textContent: seg, className: i === parts.length - 1 ? 'last' : '' }));
+    if (i < parts.length - 1) crumbs.append(el('span', { textContent: '/', className: 'sl' }));
+  });
+  const r = roleOf(p);
+  if (r) { role.textContent = r; role.hidden = false; }
+  const text = isText(p) ? editor.getValue() : '';
+  const lines = text ? text.split('\n').length + ' lines' : '';
+  const inherits = extOf(p) === 'odd' && text.match(/<schemaSpec[^>]*\ssource="([^"]+)"/)?.[1];
+  $('kind').textContent = [inherits && 'inherits ' + inherits, lines].filter(Boolean).join(' · ');
+}
+
+export function initEditor(): void {
+  editor = createEditor($('src'), () => {
+    if (!state.file) return;
+    writeFile(state.file, editor.getValue());
+    renderKind();
+    // opm.toml and ODDs decide the pipeline; other files only change the output
+    emit(state.file === 'opm.toml' || extOf(state.file) === 'odd' ? 'config' : 'edit', 'edit');
+  });
+  on('file', render);
+  on(['files', 'project'], reload);
+  on(['config', 'source'], renderKind);
+}

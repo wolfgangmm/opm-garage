@@ -1,0 +1,43 @@
+// ── boot: wire the panes, load Python and opm, reopen the last project ────
+import { lastProject } from './actions.ts';
+import { initAutosave } from './project/autosave.ts';
+import { getProject } from './project/store.ts';
+import { loadRuntime } from './runtime/pyodide.ts';
+import { initEditor } from './ui/editor.ts';
+import { initExplorer } from './ui/explorer.ts';
+import { initLayout } from './ui/layout.ts';
+import { initOutput } from './ui/output.ts';
+import { loadMarked } from './ui/previews/markdown.ts';
+import { hideSplash, splash, splashFailed } from './ui/splash.ts';
+import { initStart, openSaved, renderCards, showStart } from './ui/start.ts';
+import { setStatus } from './ui/status.ts';
+import { initSwitcher } from './ui/switcher.ts';
+import { initUploads } from './ui/uploads.ts';
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+initLayout();
+initEditor();
+initExplorer();
+initOutput();
+initUploads();
+initStart();
+initSwitcher();
+initAutosave();
+
+try {
+  await loadRuntime(splash);
+  void loadMarked().catch(() => {}); // a failure shows up when Markdown is previewed
+  renderCards();
+  setStatus('Ready');
+  const last = lastProject();
+  if (last && await getProject(last)) {
+    splash('Opening ' + last + '…', 90);
+    await openSaved(last);
+  } else showStart(true);
+  splash('Ready', 100);
+  hideSplash();
+} catch (err) {
+  splashFailed(err);
+  throw err;
+}
