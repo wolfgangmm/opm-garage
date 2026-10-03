@@ -9,7 +9,7 @@ import micropip
 await micropip.install(['elementpath>=4.8', 'python-docx>=1.1'])
 await micropip.install('emfs:/tmp/open_processing_model-0.9.0-py3-none-any.whl', deps=False)
 `);
-py.FS.writeFile('/tmp/doc.xml', fs.readFileSync('../tei-publisher-py/examples/tei-test.xml'));
+py.FS.writeFile('/tmp/doc.xml', fs.readFileSync(`${process.env.OPM_DIR ?? '../tei-publisher-py'}/examples/tei-test.xml`));
 const out = await py.runPythonAsync(`
 import time
 t=time.time()

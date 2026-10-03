@@ -51,6 +51,8 @@ jobs:
 
       - run: npm run check
       - run: npm test
+        env:
+          OPM_DIR: opm
 
       - name: Assemble the site
         run: |

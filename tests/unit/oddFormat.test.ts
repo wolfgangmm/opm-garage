@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { formatOdd } from '../../src/odd/oddFormat.ts';
 
-const squash = (s: string) => s.replace(/>\s+</g, '><');
+/** A checkout of eeditiones/open-processing-model, for its bundled ODDs. */
+const OPM_DIR = process.env.OPM_DIR ?? '../tei-publisher-py';
+
+const squash =(s: string) => s.replace(/>\s+</g, '><');
 /** Prose and example content, which must survive formatting byte for byte. */
 const opaque = (s: string) => s.match(/<(desc|egXML|outputRendition|p|gloss|param)\b[^>]*>[\s\S]*?<\/\1>/g) ?? [];
 
@@ -48,7 +51,7 @@ test('mixed content and malformed input are left alone', () => {
 
 for (const f of ['teipublisher', 'jats', 'docbook', 'tagdocs']) {
   test(`${f}.odd formats safely`, () => {
-    const src = readFileSync(`../tei-publisher-py/src/opm/resources/odd/${f}.odd`, 'utf8');
+    const src = readFileSync(`${OPM_DIR}/src/opm/resources/odd/${f}.odd`, 'utf8');
     const out = formatOdd(src);
     assert.equal(squash(out), squash(src));
     assert.deepEqual(opaque(out), opaque(src));

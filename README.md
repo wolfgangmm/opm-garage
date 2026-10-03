@@ -9,6 +9,8 @@ Transform XML with the Open Processing Model, entirely in the browser. Runs the 
     npm run check     # type check (TypeScript, no output)
     npm test          # unit tests, then every output mode headless under Pyodide in Node
 
+The tests read ODDs and examples from the opm checkout at `../tei-publisher-py`; set `OPM_DIR` to use another path.
+
 The page works on projects laid out like `opm init` creates them (`opm.toml`, `odd/`, `data/`, `templates/`). They live in the browser (IndexedDB), are saved as you type, and export as a `.zip` the `opm` CLI can run.
 
 Every push to `main` deploys to GitHub Pages (`.github/workflows/pages.yml`). The workflow builds the opm wheel from `eeditiones/open-processing-model` (`main` by default; run it by hand to pick another ref) and fails if the wheel's name differs from `WHEEL` in `src/config.ts`.
