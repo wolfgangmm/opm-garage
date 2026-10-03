@@ -1,0 +1,72 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      opm_ref:
+        description: Branch, tag or commit of eeditiones/open-processing-model to build the wheel from
+        default: main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: eeditiones/open-processing-model
+          ref: ${{ inputs.opm_ref || 'main' }}
+          path: opm
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: astral-sh/setup-uv@v6
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Build the opm wheel
+        run: |
+          uv build --wheel opm -o dist
+          wheel=$(sed -n "s/^export const WHEEL = '\(.*\)';/\1/p" src/config.ts)
+          if [ ! -f "dist/$wheel" ]; then
+            echo "::error::src/config.ts expects $wheel, but opm built: $(cd dist && ls *.whl)"
+            exit 1
+          fi
+
+      - run: npm run check
+      - run: npm test
+
+      - name: Assemble the site
+        run: |
+          mkdir -p _site/dist
+          cp index.html style.css sw.js manifest.webmanifest icon.svg icon*.png _site/
+          cp dist/app.js dist/app.js.map dist/*.whl _site/dist/
+          touch _site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
