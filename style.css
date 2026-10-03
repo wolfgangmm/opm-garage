@@ -60,7 +60,11 @@ select { font-family: var(--mono); font-size: 12px; }
 /* panes */
 main { flex: 1; min-height: 0; position: relative; display: grid; grid-template-columns: var(--cols, 248px minmax(0, 1fr) minmax(0, 1fr)); background: var(--panel); }
 .pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--panel); }
-#p-out { border-left: 1px solid var(--line); }
+#p-out { border-left: 1px solid var(--line); position: relative; }
+.splitter { position: absolute; top: 0; bottom: 0; left: -4px; width: 7px; z-index: 5; cursor: col-resize; touch-action: none; }
+.splitter:hover, .resizing .splitter { background: var(--line); }
+.resizing { cursor: col-resize; user-select: none; }
+.resizing iframe { pointer-events: none; }
 .phead { height: 40px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 6px 0 14px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
 .phead .title { font-weight: 600; }
 .phead .spacer, .subbar .spacer { flex: 1; }
@@ -209,6 +213,7 @@ main { flex: 1; min-height: 0; position: relative; display: grid; grid-template-
   #explorer { max-height: 34vh; border-right: 0; border-bottom: 1px solid var(--line); flex: none; }
   .pane { min-height: 60vh; flex: none; }
   #p-out { border-left: 0; border-top: 1px solid var(--line); }
+  .splitter { display: none; }
 }
 
 /* dialog: confirm, prompt and alert share one element */
