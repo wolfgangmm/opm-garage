@@ -19,7 +19,9 @@ The page works on projects laid out like `opm init` creates them (`opm.toml`, `o
     src/config.ts         output modes, CDN URLs, the wheel name
     src/runtime/          Pyodide loading; glue.py and its typed wrappers in opm.ts
     src/project/          project files in Pyodide's file system, opm.toml, zip, IndexedDB, autosave
+    src/odd/              ODD parsing and in-place text edits behind the visual ODD editor (from ODDity)
     src/ui/               one module per pane or widget: editor, explorer, output, start, switcher, …
+    src/ui/odd/           the visual ODD editor: Lit components ported from ODDity
     tests/unit/           node:test tests for the pure modules
     tests/node/           headless Pyodide runs of the wheel
 

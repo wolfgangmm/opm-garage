@@ -1,6 +1,6 @@
 import { EditorView, basicSetup } from 'codemirror';
 import { EditorState, Compartment, type Extension } from '@codemirror/state';
-import { keymap, Decoration, ViewPlugin, MatchDecorator, type DecorationSet, type ViewUpdate } from '@codemirror/view';
+import { keymap, lineNumbers, Decoration, ViewPlugin, MatchDecorator, type DecorationSet, type ViewUpdate } from '@codemirror/view';
 import { indentWithTab } from '@codemirror/commands';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
@@ -10,8 +10,9 @@ import { html } from '@codemirror/lang-html';
 import { StreamLanguage } from '@codemirror/language';
 import { toml } from '@codemirror/legacy-modes/mode/toml';
 import { python } from '@codemirror/legacy-modes/mode/python';
+import { json } from '@codemirror/legacy-modes/mode/javascript';
 
-const style = HighlightStyle.define([
+export const highlightStyle = HighlightStyle.define([
   { tag: [t.tagName, t.angleBracket, t.typeName, t.className, t.keyword], color: 'var(--tag)' },
   { tag: [t.attributeName, t.propertyName], color: 'var(--attr)' },
   { tag: [t.string, t.attributeValue, t.number, t.color, t.unit], color: 'var(--str)' },
@@ -23,10 +24,10 @@ const theme = EditorView.theme({
   '&': { height: '100%', backgroundColor: 'var(--panel)', color: 'var(--fg)', fontSize: '12.5px' },
   '.cm-scroller': { fontFamily: 'var(--mono)', lineHeight: '20px' },
   '.cm-gutters': { backgroundColor: 'var(--panel)', color: 'var(--muted)', border: 'none' },
-  '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'var(--accent-soft)' },
+  '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'color-mix(in srgb, var(--accent) 10%, transparent)' },
   '&.cm-focused': { outline: 'none' },
   '.cm-cursor': { borderLeftColor: 'var(--fg)' },
-  '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': { backgroundColor: 'rgba(31, 92, 85, .25)' },
+  '.cm-selectionBackground, &.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, &.cm-focused .cm-selectionBackground': { backgroundColor: 'color-mix(in srgb, var(--accent) 40%, transparent) !important' },
   '.cm-jinja-expr': { color: 'var(--accent)' },
   '.cm-jinja-stmt': { color: 'var(--attr)', fontWeight: '600' },
   '.cm-jinja-comment': { color: 'var(--muted)', fontStyle: 'italic' },
@@ -60,7 +61,7 @@ export function createEditor(parent: HTMLElement, onChange: () => void): Editor 
     state: EditorState.create({
       doc: '',
       extensions: [
-        basicSetup, keymap.of([indentWithTab]), theme, syntaxHighlighting(style), lang.of([]),
+        basicSetup, keymap.of([indentWithTab]), theme, syntaxHighlighting(highlightStyle), lang.of([]),
         EditorView.updateListener.of(u => { if (u.docChanged && !silent) onChange(); }),
       ],
     }),
@@ -74,4 +75,18 @@ export function createEditor(parent: HTMLElement, onChange: () => void): Editor 
       silent = false;
     },
   };
+}
+
+/** Read-only, highlighted view of generated output. */
+export function createViewer(parent: HTMLElement, text: string, kind: EditorKind | 'json'): EditorView {
+  return new EditorView({
+    parent,
+    state: EditorState.create({
+      doc: text,
+      extensions: [
+        EditorState.readOnly.of(true), EditorView.lineWrapping, lineNumbers(), theme, syntaxHighlighting(highlightStyle),
+        kind === 'json' ? StreamLanguage.define(json) : kind ? LANGS[kind]() : [],
+      ],
+    }),
+  });
 }

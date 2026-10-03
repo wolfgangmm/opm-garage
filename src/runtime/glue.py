@@ -44,3 +44,12 @@ def convert(root, xml, mode):
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
     return Project.load(root / 'opm.toml').transform(root / xml, mode=mode)
+
+
+def packaged_odd_text(name):
+    """Text of an ODD shipped with opm (e.g. teipublisher.odd), or None."""
+    from opm.resources import packaged_odd
+    try:
+        return packaged_odd(name).read_text(encoding='utf-8')
+    except FileNotFoundError:
+        return None

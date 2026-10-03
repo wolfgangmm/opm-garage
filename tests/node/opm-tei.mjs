@@ -6,7 +6,7 @@ const wheel = fs.readFileSync('dist/open_processing_model-0.9.0-py3-none-any.whl
 py.FS.writeFile('/tmp/open_processing_model-0.9.0-py3-none-any.whl', wheel);
 await py.runPythonAsync(`
 import micropip
-await micropip.install(['elementpath>=4.8', 'python-docx>=1.1', 'babel'])
+await micropip.install(['elementpath>=4.8', 'python-docx>=1.1'])
 await micropip.install('emfs:/tmp/open_processing_model-0.9.0-py3-none-any.whl', deps=False)
 `);
 py.FS.writeFile('/tmp/doc.xml', fs.readFileSync('../tei-publisher-py/examples/tei-test.xml'));

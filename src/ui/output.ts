@@ -5,6 +5,8 @@ import { base, config, oddPath, projectFiles, readText, writeFile } from '../pro
 import { setToml, tomlString, unsetToml } from '../project/toml.ts';
 import { convert, ready } from '../runtime/opm.ts';
 import { emit, on, state } from '../state.ts';
+import type { EditorView } from 'codemirror';
+import { createViewer, type EditorKind } from './codemirror.ts';
 import { $, download, el } from './dom.ts';
 import { DOWNLOAD } from './icons.ts';
 import { markdownFrame } from './previews/markdown.ts';
@@ -81,6 +83,10 @@ function showOnPaper(frame: HTMLIFrameElement): void {
 }
 
 function showResult({ mode, name, result }: Result): void {
+  // keep the scroll position when the same file is regenerated
+  const key = mode + ':' + name;
+  const scroll = viewer && viewerKey === key ? viewer.scrollSnapshot() : null;
+  viewer?.destroy(); viewer = null;
   clearOut();
   const my = seq;
   const file = name.replace(/\.[^.]+$/, '') + '.' + EXT[mode];
@@ -101,8 +107,22 @@ function showResult({ mode, name, result }: Result): void {
   } else if (rendered) {
     showOnPaper(el('iframe', { srcdoc: result }));
   } else {
-    $('out').append(el('pre', { textContent: result }));
+    showSource(result, mode, key, scroll);
   }
+}
+
+/** Beyond this size highlighting costs more than it helps; fall back to plain text. */
+const HIGHLIGHT_LIMIT = 500_000;
+const SOURCE_KIND: Partial<Record<Mode, EditorKind | 'json'>> = { web: 'html', print: 'html', json: 'json' };
+
+let viewer: EditorView | null = null, viewerKey = '';
+
+function showSource(text: string, mode: Mode, key: string, scroll: ReturnType<EditorView['scrollSnapshot']> | null): void {
+  if (text.length > HIGHLIGHT_LIMIT) { $('out').append(el('pre', { textContent: text })); return; }
+  const host = el('div', { className: 'source' });
+  $('out').append(host);
+  viewer = createViewer(host, text, SOURCE_KIND[mode] ?? ''); viewerKey = key;
+  if (scroll) viewer.dispatch({ effects: scroll });
 }
 
 async function showPdf(name: string, source: string, my: number): Promise<void> {

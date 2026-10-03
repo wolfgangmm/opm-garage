@@ -1,15 +1,21 @@
 // ── source editor: tabs, breadcrumbs, CodeMirror or a binary preview ──────
-import { closeTab, showFile } from '../actions.ts';
+import { closeTab, openFile } from '../actions.ts';
 import { IMAGES } from '../config.ts';
-import { base, extOf, readBytes, readText, writeFile } from '../project/fs.ts';
+import { base, dirOf, exists, extOf, isOdd, normPath, readBytes, readText, writeFile } from '../project/fs.ts';
 import { roleOf } from '../project/pipeline.ts';
 import { isText } from '../project/zip.ts';
 import { emit, on, state } from '../state.ts';
 import { createEditor, type EditorKind } from './codemirror.ts';
 import { $, el } from './dom.ts';
 import { icon } from './icons.ts';
+import { packagedOdd } from '../runtime/opm.ts';
+import type { OddEditor, OddHost } from './odd/odd-editor.ts';
+import './odd/odd-editor.ts';
 
 let editor: ReturnType<typeof createEditor>;
+let oddEditor: OddEditor;
+/** The ODD the visual editor last showed, so reopening it keeps the selection. */
+let oddShown = '';
 
 function editorKind(p: string): EditorKind {
   const e = extOf(p), n = base(p);
@@ -22,10 +28,13 @@ function editorKind(p: string): EditorKind {
   return '';
 }
 
+const visualOdd = (p: string) => !!p && state.oddView === 'visual' && isOdd(p);
+
 function render(): void {
-  const p = state.file, text = !p || isText(p);
-  $('src').hidden = !text; $('preview').hidden = text;
-  if (p && text) editor.setValue(readText(p), editorKind(p));
+  const p = state.file, text = !p || isText(p), visual = visualOdd(p);
+  $('src').hidden = !text || visual; $('oddvis').hidden = !visual; $('preview').hidden = text;
+  if (visual) showOdd(p);
+  else if (p && text) editor.setValue(readText(p), editorKind(p));
   else if (p) showBinary(p);
   renderTabs(); renderKind();
 }
@@ -33,8 +42,36 @@ function render(): void {
 /** Pick up changes made outside the editor, e.g. an upload or the template menu. */
 function reload(): void {
   const p = state.file;
-  if (p && isText(p) && readText(p) !== editor.getValue()) editor.setValue(readText(p), editorKind(p));
+  if (visualOdd(p)) oddEditor.reload();
+  else if (p && isText(p) && readText(p) !== editor.getValue()) editor.setValue(readText(p), editorKind(p));
   renderTabs(); renderKind();
+}
+
+function showOdd(p: string): void {
+  const host: OddHost = {
+    read: () => readText(p),
+    write(text) {
+      writeFile(p, text);
+      renderKind();
+      emit('config', 'edit');
+    },
+    // A sibling file first, as opm resolves it, then the ODDs shipped with opm
+    parent(source) {
+      const sibling = normPath(dirOf(p) + source);
+      return sibling !== p && exists(sibling) ? readText(sibling) : packagedOdd(source);
+    },
+    showSource: () => setOddView('source'),
+  };
+  oddEditor.channel = state.mode;
+  oddEditor.open(host, p !== oddShown);
+  oddShown = p;
+}
+
+function setOddView(v: typeof state.oddView): void {
+  if (v === state.oddView) return;
+  oddEditor.flush();
+  state.oddView = v;
+  render();
 }
 
 function showBinary(p: string): void {
@@ -59,7 +96,7 @@ function renderTabs(): void {
     b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(p === state.file));
     b.append(el('span', { className: 'ico', textContent: icon(p) }), el('span', { className: 'lbl', textContent: base(p) }),
       el('span', { className: 'x', title: 'Close', textContent: '×' }));
-    b.onclick = e => { if ((e.target as Element).classList.contains('x')) closeTab(p); else showFile(p); };
+    b.onclick = e => { if ((e.target as Element).classList.contains('x')) closeTab(p); else openFile(p); };
     return b;
   }));
 }
@@ -75,10 +112,13 @@ function renderKind(): void {
   });
   const r = roleOf(p);
   if (r) { role.textContent = r; role.hidden = false; }
-  const text = isText(p) ? editor.getValue() : '';
+  const text = isText(p) ? readText(p) : '';
   const lines = text ? text.split('\n').length + ' lines' : '';
   const inherits = extOf(p) === 'odd' && text.match(/<schemaSpec[^>]*\ssource="([^"]+)"/)?.[1];
   $('kind').textContent = [inherits && 'inherits ' + inherits, lines].filter(Boolean).join(' · ');
+  const odd = $('oddview');
+  odd.hidden = !isOdd(p);
+  for (const b of odd.children) b.setAttribute('aria-pressed', String((b as HTMLElement).dataset.v === state.oddView));
 }
 
 export function initEditor(): void {
@@ -89,7 +129,11 @@ export function initEditor(): void {
     // opm.toml and ODDs decide the pipeline; other files only change the output
     emit(state.file === 'opm.toml' || extOf(state.file) === 'odd' ? 'config' : 'edit', 'edit');
   });
-  on('file', render);
+  oddEditor = $<OddEditor>('oddvis');
+  for (const b of $('oddview').children as HTMLCollectionOf<HTMLElement>) b.onclick = () => setOddView(b.dataset.v as typeof state.oddView);
+  // The visual editor marks the rules that fire for the current output mode
+  on('source', () => { oddEditor.channel = state.mode; });
+  on('file', () => { oddEditor.flush(); render(); });
   on(['files', 'project'], reload);
   on(['config', 'source'], renderKind);
 }

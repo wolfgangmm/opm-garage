@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>try{var t=localStorage.getItem("opm-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -21,6 +22,7 @@
     <div class="splash-name">OPM Garage</div>
     <div class="splash-bar"><span id="splash-fill"></span></div>
     <div class="splash-step" id="splash-step">Starting…</div>
+    <p class="splash-note">OPM Garage runs entirely in your browser. Downloading the environment may take a while…</p>
   </div>
 </div>
 <header class="topbar">
@@ -31,6 +33,7 @@
   <nav>
     <a href="https://opm.e-editiones.org" target="_blank" rel="noopener">Docs</a>
     <a href="https://github.com/eeditiones" target="_blank" rel="noopener">GitHub</a>
+    <button class="ibtn" id="theme" title="Switch between light and dark mode" aria-label="Switch between light and dark mode"></button>
     <button class="btn" id="proj-export" hidden>Export .zip</button>
   </nav>
 </header>
@@ -57,8 +60,13 @@
       <span class="role" id="role" hidden></span>
       <span class="spacer"></span>
       <span id="kind"></span>
+      <div class="seg small" id="oddview" hidden>
+        <button data-v="visual" aria-pressed="true">Visual</button>
+        <button data-v="source" aria-pressed="false">Source</button>
+      </div>
     </div>
     <div class="editor" id="src"></div>
+    <odd-editor id="oddvis" hidden></odd-editor>
     <div id="preview" hidden></div>
   </section>
   <section class="pane" id="p-out">
@@ -87,7 +95,7 @@
     <div class="start-inner">
       <h2>Start a project</h2>
       <p class="hint">A project is a folder like the ones <code>opm init</code> creates: <code>opm.toml</code>, an ODD with its CSS, XML sources, templates and assets.</p>
-      <div class="prow"><input type="text" id="new-name" placeholder="Project name (optional)"><label class="chk"><input type="checkbox" id="all-tpl" checked> copy all HTML templates</label></div>
+      <div class="prow"><input type="text" id="new-name" placeholder="Project name (optional)"><label class="chk"><input type="checkbox" id="all-tpl" checked> copy all templates</label></div>
       <h3>Examples</h3>
       <div class="cards" id="ex-cards"></div>
       <h3>New empty project</h3>

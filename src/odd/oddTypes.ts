@@ -1,0 +1,206 @@
+/**
+ * Shared data model for the graphical ODD editor. Plain data only (no imports),
+ * shared by the text edits in src/odd and the form in src/ui/odd.
+ *
+ * The shape mirrors the processing-model subset the TEI Publisher ODD editor
+ * worked with: a schemaSpec of elementSpecs, each holding a tree of
+ * model / modelGrp / modelSequence rules.
+ */
+
+export type ModelType = "model" | "modelGrp" | "modelSequence";
+
+export interface Param {
+  name: string;
+  value: string;
+  /** true → `<pb:set-param>`, false → `<param>`. */
+  set: boolean;
+}
+
+export interface Rendition {
+  scope?: string;
+  css: string;
+}
+
+export interface ModelNode {
+  type: ModelType;
+  output?: string;
+  predicate?: string;
+  /** Only meaningful on `type === "model"`. */
+  behaviour?: string;
+  /** ODD attribute `cssClass`. */
+  css?: string;
+  /** ODD attribute `useSourceRendition`. */
+  sourcerend?: boolean;
+  /** ODD attribute `pb:mode`. */
+  mode?: string;
+  /** Inner XML of the rule's `<desc>`, verbatim. */
+  desc?: string;
+  /** Inner content of `<pb:template>`, verbatim. */
+  template?: string;
+  params: Param[];
+  renditions: Rendition[];
+  /** Nested rules, for `modelGrp` / `modelSequence`. */
+  models: ModelNode[];
+  /** True when this rule contains markup the form does not model. */
+  hasUnmodeled?: boolean;
+}
+
+export interface ElementSpec {
+  ident: string;
+  mode?: string;
+  /** Inner XML of the element-level `<desc>`, verbatim. */
+  desc?: string;
+  models: ModelNode[];
+  /** Source offset range of the whole `<elementSpec>` (host-side only). */
+  range?: { start: number; end: number };
+  /** True when a rule inside holds markup the form does not model — and drops. */
+  hasUnmodeled?: boolean;
+  /**
+   * Names of the spec's non-rule children (`attList`, `content`, …). The form
+   * doesn't edit them, but they are spliced through unchanged on save.
+   */
+  otherChildren?: string[];
+}
+
+export interface OddMeta {
+  ident?: string;
+  source?: string;
+  ns?: string;
+  start?: string;
+  title?: string;
+  titleShort?: string;
+  description?: string;
+  cssFile?: string;
+}
+
+export interface OddModel {
+  meta: OddMeta;
+  elementSpecs: ElementSpec[];
+  /** Range of the `<schemaSpec>` start tag (for editing meta attributes). */
+  metaRange?: { start: number; end: number };
+  /** Offset of `</schemaSpec>` (insertion point for new elementSpecs). */
+  schemaSpecBodyEnd?: number;
+  /** Leading indent of an `<elementSpec>` line, e.g. "                ". */
+  elementSpecIndent: string;
+  /** One indentation step, e.g. "    " or "\t". */
+  indentUnit: string;
+  /** True when the document has no `<schemaSpec>` to edit. */
+  empty?: boolean;
+  /** Set when the document is not well-formed XML. */
+  xmlError?: string;
+}
+
+/** Behaviours offered in the dropdown; anything else lands in "custom". */
+export const BEHAVIOURS = [
+  "anchor",
+  "alternate",
+  "block",
+  "body",
+  "break",
+  "cell",
+  "document",
+  "figure",
+  "graphic",
+  "heading",
+  "index",
+  "inline",
+  "link",
+  "list",
+  "listItem",
+  "metadata",
+  "note",
+  "omit",
+  "paragraph",
+  "pass-through",
+  "row",
+  "section",
+  "table",
+  "text",
+  "title",
+  "webcomponent",
+];
+
+/** Base output channels. */
+const BASE_OUTPUTS = ["docx", "epub", "fo", "latex", "markdown", "plain", "print", "typst", "web"];
+
+/** Output channels whose templates are XML fragments (not CDATA text). */
+export const XML_TEMPLATE_OUTPUTS = ["web", "print", "epub"] as const;
+
+/** True when a model's template should be well-formed XML, not CDATA text. */
+export function isXmlTemplateOutput(output?: string): boolean {
+  if (!output) {
+    return true;
+  }
+  const base = output.startsWith("opm-") ? output.slice(4) : output;
+  return (XML_TEMPLATE_OUTPUTS as readonly string[]).includes(base);
+}
+
+/** Output channels offered in the dropdown — each base channel plus its `opm-` variant. */
+export const OUTPUTS = [...BASE_OUTPUTS, ...BASE_OUTPUTS.map((o) => `opm-${o}`)];
+
+/** outputRendition scopes. */
+export const SCOPES = ["before", "after"];
+
+/** elementSpec modes. */
+export const MODES = ["change", "add"];
+
+/**
+ * What the ODD content model permits on each kind of rule, after
+ * `teipublisher_odds.xsd`. `output`, `useSourceRendition` and the `att.global`
+ * attributes are allowed on all three and so are not listed.
+ */
+export interface RuleSchema {
+  behaviour: boolean;
+  predicate: boolean;
+  cssClass: boolean;
+  /** `pb:mode` */
+  pbMode: boolean;
+  /** `pb:template` */
+  template: boolean;
+  /** `param` / `pb:set-param` */
+  params: boolean;
+  /** How many `<outputRendition>` children are allowed. */
+  renditions: number;
+  /** Which rule types may be nested inside. */
+  nested: ModelType[];
+}
+
+export const RULE_SCHEMA: Record<ModelType, RuleSchema> = {
+  model: {
+    behaviour: true,
+    predicate: true,
+    cssClass: true,
+    pbMode: true,
+    template: true,
+    params: true,
+    renditions: Infinity,
+    nested: [],
+  },
+  modelGrp: {
+    behaviour: false,
+    predicate: false,
+    cssClass: false,
+    pbMode: false,
+    template: false,
+    params: false,
+    renditions: 1,
+    nested: ["model", "modelSequence"],
+  },
+  modelSequence: {
+    behaviour: false,
+    predicate: true,
+    cssClass: false,
+    pbMode: false,
+    template: false,
+    params: false,
+    renditions: 0,
+    nested: ["model"],
+  },
+};
+
+/** In-memory clipboard payload shared across graphical editor webviews. */
+export type OddClipboard =
+  | { kind: "model"; data: ModelNode }
+  | { kind: "elementSpec"; data: ElementSpec };
+
+export type OddClipboardState = OddClipboard | null;

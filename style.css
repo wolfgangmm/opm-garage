@@ -10,7 +10,7 @@
   --sans: "Instrument Sans", system-ui, -apple-system, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #171a19; --panel: #1f2321; --panel-2: #1b1f1d; --fg: #e5e7e3; --muted: #9aa19c; --faint: #737a75;
     --line: #333a36; --line-2: #2a302d; --btn-line: #3d4541; --hover: #2a302d; --stage: #141716;
     --accent: #4fa89b; --accent-fg: #0d1513; --accent-soft: #23342f;
@@ -18,6 +18,16 @@
     --tag: #6cc1b5; --attr: #e0a06f; --str: #e08f8f; --pi: #7f8682;
   }
 }
+:root[data-theme="dark"] {
+  --bg: #171a19; --panel: #1f2321; --panel-2: #1b1f1d; --fg: #e5e7e3; --muted: #9aa19c; --faint: #737a75;
+  --line: #333a36; --line-2: #2a302d; --btn-line: #3d4541; --hover: #2a302d; --stage: #141716;
+  --accent: #4fa89b; --accent-fg: #0d1513; --accent-soft: #23342f;
+  --warn: #e0b45e; --warn-bg: #2f2812; --warn-line: #4d4120; --warn-fg: #ecd9a0;
+  --tag: #6cc1b5; --attr: #e0a06f; --str: #e08f8f; --pi: #7f8682;
+}
+:root { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; } }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body { margin: 0; font: 13px/1.4 var(--sans); background: var(--bg); color: var(--fg); display: flex; flex-direction: column; }
@@ -155,6 +165,7 @@ main { flex: 1; min-height: 0; position: relative; display: grid; grid-template-
 #out .paper iframe { display: block; }
 #out iframe { width: 100%; height: 100%; border: 0; background: #fff; }
 #out pre { margin: 0; padding: .75rem 1rem; width: 100%; overflow: auto; font: 12.5px/20px var(--mono); white-space: pre-wrap; word-break: break-word; }
+#out .source { flex: 1; min-width: 0; min-height: 0; }
 #out pre.err { color: var(--err); }
 .filecard { margin: 2rem auto; align-self: flex-start; text-align: center; padding: 2rem 3rem; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
 .filecard .ico { font-size: 40px; }
@@ -224,6 +235,7 @@ main { flex: 1; min-height: 0; position: relative; display: grid; grid-template-
 #splash .splash-bar { width: 100%; height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
 #splash .splash-bar span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s ease; }
 #splash .splash-step { color: var(--muted); font-size: 12px; min-height: 1.4em; text-align: center; }
+#splash .splash-note { margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; text-align: center; }
 #splash.failed .splash-step { color: var(--err); }
 @media (prefers-reduced-motion: reduce) { #splash, #splash .splash-bar span { transition: none; } }
 
@@ -236,3 +248,93 @@ main { flex: 1; min-height: 0; position: relative; display: grid; grid-template-
 .menu button .ck { width: 12px; color: var(--accent); }
 .menu button[aria-checked=true] .nm { color: var(--accent); font-weight: 500; }
 .menu hr { border: 0; border-top: 1px solid var(--line-2); margin: 4px 2px; }
+
+/* ODD visual editor (src/ui/odd), after ODDity's form; layout per design 4b */
+odd-editor { flex: 1; min-height: 0; display: grid; grid-template-columns: 188px minmax(0, 1fr); background: var(--panel); }
+odd-editor[hidden] { display: none; }
+odd-editor button { font: inherit; color: inherit; }
+odd-editor input[type=text], odd-editor input[type=search], odd-editor select, odd-editor textarea { font: 12.5px var(--sans); height: 30px; padding: 0 8px; border: 1px solid var(--btn-line); border-radius: 6px; background: var(--panel); color: var(--fg); min-width: 0; }
+odd-editor input:focus, odd-editor select:focus, odd-editor textarea:focus { outline: none; border-color: var(--accent); }
+odd-editor textarea { height: auto; padding: 6px 8px; font-family: var(--mono); resize: vertical; width: 100%; }
+odd-editor .spacer { flex: 1; }
+odd-editor .odd-side { min-height: 0; display: flex; flex-direction: column; gap: 6px; padding: 10px 6px 6px; border-right: 1px solid var(--line-2); background: var(--bg); overflow: hidden; }
+odd-editor .odd-meta { display: flex; flex-direction: column; gap: 1px; padding: 0 6px 4px; min-width: 0; }
+odd-editor .odd-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+odd-editor .odd-source { font: 11.5px var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+odd-editor .odd-add { display: flex; gap: 2px; align-items: center; }
+odd-editor .odd-add input { flex: 1; height: 28px; font-family: var(--mono); font-size: 12px; }
+odd-editor .odd-add-error { color: var(--err); font-size: 11.5px; padding: 0 6px; }
+odd-editor .cap { padding: 8px 6px 0; }
+odd-editor .odd-filter { height: 26px !important; font-size: 12px !important; }
+odd-editor .spec-list { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 1px; }
+odd-editor .spec-item { flex: none; display: flex; align-items: center; gap: 6px; padding: 5px 7px; border: 0; border-radius: 5px; background: transparent; cursor: pointer; text-align: left; }
+odd-editor .spec-item:hover { background: var(--hover); }
+odd-editor .spec-item .ident { flex: 1; min-width: 0; font: 500 12.5px var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+odd-editor .mode-badge { font: 600 9.5px var(--sans); border-radius: 999px; padding: 1px 6px; background: var(--accent-soft); color: var(--accent); }
+odd-editor .mode-badge.add { background: var(--warn-bg); color: var(--attr); }
+odd-editor .mode-badge.delete { background: var(--warn-bg); color: var(--str); }
+odd-editor .mode-badge.replace { background: var(--hover); color: var(--fg); }
+odd-editor .spec-item.active { background: var(--accent); color: var(--accent-fg); }
+odd-editor .spec-item.active .mode-badge { background: rgba(255, 255, 255, .22); color: var(--accent-fg); }
+odd-editor .odd-main { min-height: 0; overflow: auto; padding: 14px 16px 40px; }
+.odd-error { grid-column: 1 / -1; align-self: start; margin: 16px; padding: 10px 12px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--warn-line); border-radius: 7px; background: var(--warn-bg); color: var(--warn-fg); font-size: 12.5px; line-height: 1.45; }
+.odd-error span { flex: 1; }
+odd-editor .empty-main, odd-editor .empty-models { color: var(--faint); padding: 8px 0; }
+
+/* the selected elementSpec */
+odd-editor .spec-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-bottom: 10px; }
+odd-editor .spec-head .ident { font: 600 15px var(--mono) !important; width: 180px; }
+odd-editor .spec-head .mode { display: flex; align-items: center; gap: 6px; font: 600 10.5px var(--sans); letter-spacing: .07em; color: var(--muted); }
+odd-editor .spec-head > button:not(.icon) { height: 28px; padding: 0 9px; border: 1px solid var(--btn-line); border-radius: 6px; background: var(--panel); font-size: 12px; font-weight: 500; cursor: pointer; }
+odd-editor .spec-head > button:not(.icon):hover { border-color: var(--accent); color: var(--accent); }
+odd-editor button.icon { width: 26px; height: 26px; padding: 0; display: inline-grid; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; flex: none; }
+odd-editor button.icon:hover { background: var(--hover); color: var(--fg); }
+odd-editor button.icon.danger:hover { color: var(--err); }
+odd-editor .warn, odd-editor .note { margin: 0 0 10px; padding: 8px 10px; border-radius: 7px; font-size: 12.5px; line-height: 1.45; }
+odd-editor .warn { border: 1px solid var(--warn-line); background: var(--warn-bg); color: var(--warn-fg); }
+odd-editor .note { border: 1px solid var(--line); color: var(--muted); }
+odd-editor .note code { color: var(--fg); font-family: var(--mono); }
+odd-editor .spec-desc { margin-bottom: 10px; }
+
+/* model cards */
+odd-editor .models { display: flex; flex-direction: column; gap: 8px; }
+odd-editor model-card { display: block; }
+odd-editor .model { border: 1px solid var(--line); border-radius: 7px; background: var(--panel); min-width: 0; }
+odd-editor .model-head { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 10px; min-height: 38px; cursor: pointer; min-width: 0; }
+odd-editor .model.open > .model-head { border-bottom: 1px solid var(--line-2); background: var(--panel-2); border-radius: 7px 7px 0 0; }
+odd-editor .grip { color: var(--faint); cursor: grab; user-select: none; font-size: 13px; }
+odd-editor .grip:active { cursor: grabbing; }
+odd-editor .twisty { width: 10px; font-size: 9px; color: var(--faint); }
+odd-editor .model-title { font: 600 12.5px var(--sans); white-space: nowrap; }
+odd-editor .model-title .beh { font: 500 12px var(--mono); color: var(--str); }
+odd-editor .model-head .tag { font: 600 10px var(--sans); color: var(--accent-fg); background: var(--accent); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+odd-editor .model-head .pred { font: 11.5px var(--mono); color: var(--str); background: var(--warn-bg); border-radius: 3px; padding: 1px 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+odd-editor .fires { display: flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; color: var(--ok); white-space: nowrap; }
+odd-editor .fires::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+odd-editor .model-tools { display: flex; gap: 1px; }
+odd-editor .model.elsewhere > .model-head { opacity: .5; }
+odd-editor model-card.drop-before { box-shadow: 0 -2px 0 0 var(--accent); }
+odd-editor model-card.drop-after { box-shadow: 0 2px 0 0 var(--accent); }
+odd-editor .model-body { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+odd-editor .row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; height: auto; padding: 0; border-radius: 0; cursor: auto; }
+odd-editor .row:hover { background: none; }
+odd-editor .field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+odd-editor .field > span { font: 600 10.5px var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+odd-editor .field.grow { flex: 3; }
+odd-editor .field.scope { flex: 0 1 110px; }
+odd-editor .field.name { flex: 0 1 120px; }
+odd-editor .field.invalid cm-field { outline: 1px solid var(--err); border-radius: 6px; }
+odd-editor .field-error { color: var(--err); font-size: 11.5px; line-height: 1.3; }
+odd-editor .inline { display: flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 12px; color: var(--muted); }
+odd-editor .src-rend { margin-left: auto; height: 30px; }
+odd-editor cm-field { display: block; }
+odd-editor cm-field .cm-editor { max-height: 280px; }
+odd-editor .spec-desc cm-field .cm-host { min-height: 3.2em; }
+odd-editor .tmpl-tools { margin-left: 8px; text-transform: none; letter-spacing: 0; }
+odd-editor .tmpl-tools button { height: 20px; padding: 0 5px; border: 1px solid var(--btn-line); border-radius: 4px; background: var(--panel); font: 11px var(--mono); cursor: pointer; }
+odd-editor .section { border-top: 1px dashed var(--line); padding-top: 10px; }
+odd-editor .section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font: 600 10.5px var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+odd-editor .param, odd-editor .rendition { align-items: flex-start; }
+odd-editor .param > .inline, odd-editor .param > button, odd-editor .rendition > button { margin-top: 20px; }
+odd-editor .schema-violation { border-left: 2px solid var(--amber); padding-left: 6px; }
+odd-editor .nested model-card { margin-top: 6px; }

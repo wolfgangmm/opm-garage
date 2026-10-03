@@ -23,3 +23,6 @@ export function convert(root: string, xml: string, mode: Mode): string | Uint8Ar
   const result = fn<[string, string, Mode], string | { toJs(): Uint8Array }>('convert')(root, xml, mode);
   return typeof result === 'string' ? result : result.toJs();
 }
+
+/** Text of an ODD shipped with opm, such as teipublisher.odd, or undefined. */
+export const packagedOdd = (name: string): string | undefined => fn<[string], string | undefined>('packaged_odd_text')(name) ?? undefined;

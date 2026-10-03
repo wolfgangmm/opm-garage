@@ -6,7 +6,7 @@ const w='open_processing_model-0.9.0-py3-none-any.whl';
 py.FS.writeFile('/tmp/'+w, fs.readFileSync('dist/'+w));
 await py.runPythonAsync(`
 import micropip
-await micropip.install(['elementpath>=4.8','python-docx>=1.1','babel'])
+await micropip.install(['elementpath>=4.8','python-docx>=1.1'])
 await micropip.install('emfs:/tmp/${w}', deps=False)
 from opm import Project
 from lxml import etree

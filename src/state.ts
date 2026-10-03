@@ -17,9 +17,11 @@ export interface AppState {
   mode: Mode;
   /** Output pane view: the rendered preview or the generated code. */
   view: 'rendered' | 'code';
+  /** How ODDs are edited: the visual form or the XML source. */
+  oddView: 'visual' | 'source';
 }
 
-export const state: AppState = { project: null, dir: '', open: [], file: '', xml: '', mode: 'web', view: 'rendered' };
+export const state: AppState = { project: null, dir: '', open: [], file: '', xml: '', mode: 'web', view: 'rendered', oddView: 'visual' };
 
 /**
  * - `project`: a project was opened or closed

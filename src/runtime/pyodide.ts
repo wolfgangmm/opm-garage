@@ -16,7 +16,7 @@ export async function loadRuntime(progress: (step: string, pct: number) => void)
   progress('Installing opm…', 65);
   await runtime.runPythonAsync(`
 import micropip
-await micropip.install(['elementpath>=4.8', 'python-docx>=1.1', 'babel'])
+await micropip.install(['elementpath>=4.8', 'python-docx>=1.1'])
 await micropip.install('emfs:/tmp/${WHEEL}', deps=False)
 `);
   await runtime.runPythonAsync(glue);
