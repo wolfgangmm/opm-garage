@@ -10,7 +10,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "GPL-3.0-or-later",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

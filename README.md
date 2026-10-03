@@ -31,6 +31,6 @@ Panes never call each other. An action changes `state` and emits what changed (`
 
 Copyright (C) 2026 e-editiones
 
-OPM Garage is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See [LICENSE](LICENSE).
+OPM Garage is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See [LICENSE](LICENSE).
 
 The opm logo is a trademark of its owners and is not covered by this licence.
