@@ -8,6 +8,7 @@ import { emit, on, state } from '../state.ts';
 import { createEditor, type EditorKind } from './codemirror.ts';
 import { $, el } from './dom.ts';
 import { icon } from './icons.ts';
+import { formatOdd } from '../odd/oddFormat.ts';
 import { packagedOdd } from '../runtime/opm.ts';
 import type { OddEditor, OddHost } from './odd/odd-editor.ts';
 import './odd/odd-editor.ts';
@@ -118,6 +119,7 @@ function renderKind(): void {
   $('kind').textContent = [inherits && 'inherits ' + inherits, lines].filter(Boolean).join(' · ');
   const odd = $('oddview');
   odd.hidden = !isOdd(p);
+  $('fmt').hidden = !isOdd(p) || state.oddView === 'visual';
   for (const b of odd.children) b.setAttribute('aria-pressed', String((b as HTMLElement).dataset.v === state.oddView));
 }
 
@@ -129,6 +131,7 @@ export function initEditor(): void {
     // opm.toml and ODDs decide the pipeline; other files only change the output
     emit(state.file === 'opm.toml' || extOf(state.file) === 'odd' ? 'config' : 'edit', 'edit');
   });
+  $('fmt').onclick = () => { if (state.file) editor.replace(formatOdd(editor.getValue())); };
   oddEditor = $<OddEditor>('oddvis');
   for (const b of $('oddview').children as HTMLCollectionOf<HTMLElement>) b.onclick = () => setOddView(b.dataset.v as typeof state.oddView);
   // The visual editor marks the rules that fire for the current output mode

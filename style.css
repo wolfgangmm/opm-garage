@@ -50,6 +50,7 @@ select, .btn, input[type=text] { font: inherit; padding: 0 .6rem; height: 30px; 
 .btn { font-weight: 500; font-size: 12.5px; cursor: pointer; }
 .btn:hover { border-color: var(--accent); }
 .btn[hidden] { display: none; }
+.btn.small { height: 24px; padding: 0 .5rem; font-size: 12px; }
 .btn.dl { display: flex; align-items: center; gap: 6px; height: 28px; border: 0; background: var(--accent); color: var(--accent-fg); white-space: nowrap; }
 .btn.dl:hover { filter: brightness(.9); }
 .ibtn { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; padding: 0; flex: none; }

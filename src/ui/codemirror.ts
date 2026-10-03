@@ -51,6 +51,8 @@ export interface Editor {
   getValue(): string;
   /** Replace the text without reporting it as an edit. */
   setValue(text: string, kind: EditorKind): void;
+  /** Replace the text as an edit, touching only the span that differs so caret and scroll stay put. */
+  replace(text: string): void;
 }
 
 export function createEditor(parent: HTMLElement, onChange: () => void): Editor {
@@ -73,6 +75,14 @@ export function createEditor(parent: HTMLElement, onChange: () => void): Editor 
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text }, effects: lang.reconfigure(kind ? LANGS[kind]() : []),
         selection: { anchor: 0 }, scrollIntoView: true });
       silent = false;
+    },
+    replace(text) {
+      const old = view.state.doc.toString();
+      let from = 0, end = old.length, tail = text.length;
+      while (from < end && from < tail && old[from] === text[from]) from++;
+      while (end > from && tail > from && old[end - 1] === text[tail - 1]) { end--; tail--; }
+      if (from === end && from === tail) return;
+      view.dispatch({ changes: { from, to: end, insert: text.slice(from, tail) } });
     },
   };
 }
