@@ -40,6 +40,7 @@ export async function openProject(name: string, files: ProjectFiles, meta: Proje
   state.project = name; state.open = []; state.file = '';
   state.xml = meta.xml && exists(meta.xml) ? meta.xml : firstXml();
   state.mode = isMode(meta.mode) ? meta.mode : 'web';
+  state.folder = meta.folder ?? null; state.baseline = meta.sync ?? {}; state.conflicts = [];
   try { localStorage.setItem(LAST, name); } catch {}
   emit('project');
   showFile(state.xml || [oddPath()].find(p => p && exists(p)) || 'opm.toml');
@@ -48,7 +49,7 @@ export async function openProject(name: string, files: ProjectFiles, meta: Proje
 
 /** Leave the current project, e.g. after deleting it. */
 export function closeProject(): void {
-  state.project = null; state.open = [];
+  state.project = null; state.open = []; state.folder = null;
   try { localStorage.removeItem(LAST); } catch {}
   emit('project');
   showFile('');

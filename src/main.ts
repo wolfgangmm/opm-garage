@@ -1,6 +1,7 @@
 // ── boot: wire the panes, load Python and opm, reopen the last project ────
 import { lastProject } from './actions.ts';
 import { initAutosave } from './project/autosave.ts';
+import { initSync } from './project/sync.ts';
 import { getProject } from './project/store.ts';
 import { loadRuntime } from './runtime/pyodide.ts';
 import { initEditor } from './ui/editor.ts';
@@ -12,6 +13,7 @@ import { hideSplash, splash, splashFailed } from './ui/splash.ts';
 import { initStart, openSaved, renderCards, showStart } from './ui/start.ts';
 import { setStatus } from './ui/status.ts';
 import { initSwitcher } from './ui/switcher.ts';
+import { initSyncUi } from './ui/sync.ts';
 import { initTheme } from './ui/theme.ts';
 import { initUploads } from './ui/uploads.ts';
 
@@ -26,6 +28,8 @@ initStart();
 initSwitcher();
 initTheme();
 initAutosave();
+initSync();
+initSyncUi();
 
 try {
   await loadRuntime(splash);

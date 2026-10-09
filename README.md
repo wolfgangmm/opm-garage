@@ -13,6 +13,8 @@ The tests read ODDs and examples from the opm checkout at `../tei-publisher-py`;
 
 The page works on projects laid out like `opm init` creates them (`opm.toml`, `odd/`, `data/`, `templates/`). They live in the browser (IndexedDB), are saved as you type, and export as a `.zip` the `opm` CLI can run.
 
+In Chrome, Edge and other Chromium browsers a project can also be kept in sync with a folder on disk: "Open folder…" on the start page turns a folder into a project, and "Sync with folder…" in the project menu links an open one. Changes flow both ways while the page is open; a file changed on both sides since the last sync is shown so you can pick a version. After a reload the browser may ask for access to the folder again. Firefox and Safari can't write to folders, so there the feature is hidden.
+
 Every push to `main` deploys to GitHub Pages (`.github/workflows/pages.yml`). The workflow builds the opm wheel from `eeditiones/open-processing-model` (`main` by default; run it by hand to pick another ref) and fails if the wheel's name differs from `WHEEL` in `src/config.ts`.
 
 ## Code layout
@@ -22,7 +24,7 @@ Every push to `main` deploys to GitHub Pages (`.github/workflows/pages.yml`). Th
     src/actions.ts        changes to state that several panes care about (open a file, a project, …)
     src/config.ts         output modes, CDN URLs, the wheel name
     src/runtime/          Pyodide loading; glue.py and its typed wrappers in opm.ts
-    src/project/          project files in Pyodide's file system, opm.toml, zip, IndexedDB, autosave
+    src/project/          project files in Pyodide's file system, opm.toml, zip, IndexedDB, autosave, folder sync
     src/odd/              ODD parsing and in-place text edits behind the visual ODD editor (from ODDity)
     src/ui/               one module per pane or widget: editor, explorer, output, start, switcher, …
     src/ui/odd/           the visual ODD editor: Lit components ported from ODDity

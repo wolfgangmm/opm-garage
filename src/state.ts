@@ -2,6 +2,7 @@
 // Panes never call each other. An action changes `state`, then emits what
 // changed; each pane listens for the events that affect what it shows.
 import type { Mode } from './config.ts';
+import type { Baseline, Conflict } from './project/syncplan.ts';
 
 export interface AppState {
   /** Name of the open project, or null on the start page before one is opened. */
@@ -19,9 +20,17 @@ export interface AppState {
   view: 'rendered' | 'code';
   /** How ODDs are edited: the visual form or the XML source. */
   oddView: 'visual' | 'source';
+  /** The folder on disk the project is synced with, if any. */
+  folder: FileSystemDirectoryHandle | null;
+  /** Each synced file as it was at the last sync. */
+  baseline: Baseline;
+  sync: 'idle' | 'busy' | 'permission' | 'conflict' | 'error';
+  /** Files changed differently in the browser and on disk, waiting for the user. */
+  conflicts: Conflict[];
 }
 
-export const state: AppState = { project: null, dir: '', open: [], file: '', xml: '', mode: 'web', view: 'rendered', oddView: 'visual' };
+export const state: AppState = { project: null, dir: '', open: [], file: '', xml: '', mode: 'web', view: 'rendered', oddView: 'visual',
+  folder: null, baseline: {}, sync: 'idle', conflicts: [] };
 
 /**
  * - `project`: a project was opened or closed
@@ -30,8 +39,9 @@ export const state: AppState = { project: null, dir: '', open: [], file: '', xml
  * - `edit`: the file in the editor was typed into
  * - `file`: another file is shown, or the open tabs changed
  * - `source`: the XML document or output mode changed
+ * - `sync`: the folder link or its sync status changed
  */
-export type AppEvent = 'project' | 'files' | 'config' | 'edit' | 'file' | 'source';
+export type AppEvent = 'project' | 'files' | 'config' | 'edit' | 'file' | 'source' | 'sync';
 
 const handlers = new Map<AppEvent, Set<() => void>>();
 

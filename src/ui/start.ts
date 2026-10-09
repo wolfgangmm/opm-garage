@@ -2,8 +2,10 @@
 import { closeProject, openProject } from '../actions.ts';
 import { persistNow } from '../project/autosave.ts';
 import { snapshot } from '../project/fs.ts';
-import { deleteProject, getProject, listProjects } from '../project/store.ts';
-import { fromZip } from '../project/zip.ts';
+import { listDisk, pickFolder, readDisk } from '../project/folder.ts';
+import { deleteProject, getProject, listProjects, projectInFolder } from '../project/store.ts';
+import { hashBytes, type Baseline } from '../project/syncplan.ts';
+import { fromZip, type ProjectFiles } from '../project/zip.ts';
 import { copyExample, initProject, listExamples, listVocabularies } from '../runtime/opm.ts';
 import { on, state } from '../state.ts';
 import { confirmDelete, notify } from './dialog.ts';
@@ -58,6 +60,29 @@ export async function importZip(f: File): Promise<void> {
   }
 }
 
+/** Open a folder on disk as a project that stays in sync with it. */
+async function openFolder(): Promise<void> {
+  let dir: FileSystemDirectoryHandle;
+  try { dir = await pickFolder(); } catch { return; } // cancelled
+  const linked = await projectInFolder(dir);
+  if (linked) return openSaved(linked);
+  try {
+    const disk = await listDisk(dir);
+    if (!disk.has('opm.toml')) return void notify('Not an opm project', ' has no opm.toml. Pick a folder created by opm init.', dir.name);
+    setStatus('Reading ' + dir.name + '…', 'busy');
+    const files: ProjectFiles = {}, sync: Baseline = {};
+    for (const [p, f] of disk) {
+      const bytes = files[p] = await readDisk(f.handle);
+      sync[p] = { hash: hashBytes(bytes), mtime: f.mtime, size: f.size };
+    }
+    await openProject(await uniqueName(dir.name), files, { folder: dir, sync });
+    setStatus('Ready');
+  } catch (err) {
+    setStatus('Error', 'err');
+    void notify('Could not open the folder', lastErrorLine(err));
+  }
+}
+
 async function refreshProjectList(): Promise<void> {
   const list = $('proj-list');
   list.replaceChildren();
@@ -91,6 +116,7 @@ export function renderCards(): void {
 export function initStart(): void {
   $('start-close').onclick = () => showStart(false);
   $('proj-import').onclick = () => $('file-zip').click();
+  $('proj-folder').onclick = () => void openFolder();
   $<HTMLInputElement>('file-zip').onchange = e => {
     const input = e.target as HTMLInputElement, f = input.files?.[0];
     input.value = '';

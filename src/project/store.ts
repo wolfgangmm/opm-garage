@@ -1,8 +1,9 @@
 // ── IndexedDB: saved projects live in the browser ─────────────────────────
 import type { ProjectFiles } from './zip.ts';
 import type { Mode } from '../config.ts';
+import type { Baseline } from './syncplan.ts';
 
-export interface ProjectMeta { xml?: string; mode?: Mode }
+export interface ProjectMeta { xml?: string; mode?: Mode; folder?: FileSystemDirectoryHandle; sync?: Baseline }
 export interface StoredProject { name: string; files: ProjectFiles; meta: ProjectMeta; updated: number }
 
 // The database keeps its pre-rename name, so projects saved before stay reachable.
@@ -26,3 +27,9 @@ export const getProject = (name: string) => tx<StoredProject | undefined>('reado
 export const putProject = (name: string, files: ProjectFiles, meta: ProjectMeta = {}) =>
   tx('readwrite', s => s.put({ name, files, meta, updated: Date.now() } satisfies StoredProject));
 export const deleteProject = (name: string) => tx('readwrite', s => s.delete(name));
+
+/** The saved project linked to this folder, if any. */
+export async function projectInFolder(dir: FileSystemDirectoryHandle): Promise<string | undefined> {
+  for (const p of await tx<StoredProject[]>('readonly', s => s.getAll()))
+    if (p.meta.folder && await p.meta.folder.isSameEntry(dir)) return p.name;
+}

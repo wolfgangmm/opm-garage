@@ -1,11 +1,13 @@
 // ── header: project switcher and export ───────────────────────────────────
 import { persistNow } from '../project/autosave.ts';
 import { snapshot } from '../project/fs.ts';
+import { canUseFolders } from '../project/folder.ts';
 import { listProjects } from '../project/store.ts';
 import { toZip } from '../project/zip.ts';
 import { on, state } from '../state.ts';
 import { $, download, el } from './dom.ts';
 import { openSaved, showStart } from './start.ts';
+import { chooseFolder, confirmUnlink } from './sync.ts';
 
 function closeMenu(): void {
   $('proj-pop').hidden = true;
@@ -31,6 +33,9 @@ async function openMenu(): Promise<void> {
   pop.append(el('hr'),
     item('New project…', () => { showStart(true); $('new-name').focus(); }),
     item('All projects…', () => showStart(true)));
+  if (canUseFolders()) pop.append(el('hr'), state.folder
+    ? item('Stop syncing with ' + state.folder.name, () => void confirmUnlink())
+    : item('Sync with folder…', () => void chooseFolder()));
   const r = btn.getBoundingClientRect();
   pop.style.left = Math.max(16, r.left) + 'px'; pop.style.top = (r.bottom + 4) + 'px';
   pop.hidden = false; btn.setAttribute('aria-expanded', 'true');

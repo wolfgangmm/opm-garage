@@ -13,7 +13,7 @@ export function persistSoon(): void {
 export async function persistNow(): Promise<void> {
   clearTimeout(timer);
   if (!state.project) return;
-  await putProject(state.project, snapshot(), { xml: state.xml, mode: state.mode });
+  await putProject(state.project, snapshot(), { xml: state.xml, mode: state.mode, folder: state.folder ?? undefined, sync: state.baseline });
 }
 
 export function initAutosave(): void {

@@ -30,6 +30,7 @@
   <span class="brand">OPM Garage</span>
   <span class="slash" id="slash" hidden>/</span>
   <button class="switcher" id="proj-menu" title="Switch project" aria-haspopup="menu" aria-expanded="false" hidden><span id="proj-name"></span><svg width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>
+  <button class="sync-ind" id="sync-ind" hidden><svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3l1.5 1.5h4.5A1.5 1.5 0 0 1 13 4v5.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 1 9.5z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><span id="sync-name"></span><span class="st" id="sync-state"></span></button>
   <nav>
     <a href="https://opm.e-editiones.org" target="_blank" rel="noopener">Docs</a>
     <a href="https://github.com/eeditiones" target="_blank" rel="noopener">GitHub</a>
@@ -104,7 +105,7 @@
       <div class="cards" id="new-cards"></div>
       <h3>Saved in this browser</h3>
       <div class="plist" id="proj-list"></div>
-      <div class="prow"><button class="btn" id="proj-import">Import .zip…</button><input type="file" id="file-zip" accept=".zip" hidden><span class="spacer"></span><button class="btn" id="start-close" hidden>Back to project</button></div>
+      <div class="prow"><button class="btn" id="proj-import">Import .zip…</button><button class="btn" id="proj-folder" title="Open a folder created by opm init and keep it in sync with the browser">Open folder…</button><input type="file" id="file-zip" accept=".zip" hidden><span class="spacer"></span><button class="btn" id="start-close" hidden>Back to project</button></div>
     </div>
   </section>
 </main>
@@ -119,6 +120,18 @@
     <div class="actions">
       <button type="button" class="btn" id="dlg-cancel">Cancel</button>
       <button class="btn" id="dlg-ok" value="ok"></button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="sync-dlg">
+  <form method="dialog">
+    <h2>Changed in both places</h2>
+    <p>These files changed both here and in the folder since the last sync. Choose which version to keep.</p>
+    <div class="plist" id="sync-list"></div>
+    <div class="actions">
+      <button type="button" class="btn" id="sync-later">Later</button>
+      <button class="btn primary" value="ok">Apply</button>
     </div>
   </form>
 </dialog>
