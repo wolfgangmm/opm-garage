@@ -32,11 +32,12 @@ function editorKind(p: string): EditorKind {
 const visualOdd = (p: string) => !!p && state.oddView === 'visual' && isOdd(p);
 
 function render(): void {
-  const p = state.file, text = !p || isText(p), visual = visualOdd(p);
-  $('src').hidden = !text || visual; $('oddvis').hidden = !visual; $('preview').hidden = text;
+  const p = state.file, text = !!p && isText(p), visual = visualOdd(p);
+  $('src').hidden = !text || visual; $('oddvis').hidden = !visual; $('preview').hidden = text || visual;
   if (visual) showOdd(p);
-  else if (p && text) editor.setValue(readText(p), editorKind(p));
+  else if (text) editor.setValue(readText(p), editorKind(p));
   else if (p) showBinary(p);
+  else showNothing();
   renderTabs(); renderKind();
 }
 
@@ -73,6 +74,12 @@ function setOddView(v: typeof state.oddView): void {
   oddEditor.flush();
   state.oddView = v;
   render();
+}
+
+/** The last tab was closed: drop its text, so nothing stale stays in the editor. */
+function showNothing(): void {
+  editor.setValue('', '');
+  $('preview').replaceChildren(el('p', { className: 'hint', textContent: 'No file open. Pick one in the file list.' }));
 }
 
 function showBinary(p: string): void {
