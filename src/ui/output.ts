@@ -84,7 +84,7 @@ function showError(text: string): void {
 const hideDownload = () => { $('download').hidden = true; };
 function setDownload(file: string, onclick: () => void): void {
   const dl = $<HTMLButtonElement>('download');
-  dl.innerHTML = DOWNLOAD; dl.append(file); dl.hidden = false;
+  dl.innerHTML = DOWNLOAD; dl.append(file); dl.title = 'Download ' + file; dl.hidden = false;
   dl.onclick = onclick;
 }
 
@@ -179,8 +179,18 @@ async function showPdf(name: string, source: string, my: number): Promise<void> 
 }
 
 // ── modes, view toggle, templates, command line ───────────────────────────
+/** When the modes scroll (a narrow output pane), keep the chosen one in sight; run after layout. */
+function revealMode(): void {
+  const modes = $('modes'), b = modes.querySelector<HTMLElement>('[aria-pressed=true]');
+  if (!b || modes.scrollWidth <= modes.clientWidth) return;
+  const r = b.getBoundingClientRect(), box = modes.getBoundingClientRect();
+  if (r.left < box.left) modes.scrollLeft -= box.left - r.left;
+  else if (r.right > box.right) modes.scrollLeft += r.right - box.right;
+}
+
 function updateModeUi(): void {
   for (const b of $('modes').children as HTMLCollectionOf<HTMLElement>) b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode));
+  requestAnimationFrame(revealMode);
   $('out-mode').textContent = state.mode;
   const view = $('view'), preview = PREVIEW.has(state.mode);
   view.hidden = !preview;
@@ -233,6 +243,7 @@ export function initOutput(): void {
     tip(b, ...MODE_INFO[m]);
     $('modes').append(b);
   }
+  new ResizeObserver(revealMode).observe($('modes'));
   const view = $('view');
   for (const b of view.children as HTMLCollectionOf<HTMLElement>) b.onclick = () => {
     state.view = b.dataset.v as typeof state.view; view.dataset.touched = '1';

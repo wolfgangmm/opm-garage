@@ -60,6 +60,11 @@ select, .btn, input[type=text] { font: inherit; padding: 0 .6rem; height: 30px; 
 .btn.small { height: 24px; padding: 0 .5rem; font-size: 12px; }
 .btn.dl { display: flex; align-items: center; gap: 6px; height: 28px; border: 0; background: var(--accent); color: var(--accent-fg); white-space: nowrap; }
 .btn.dl:hover { filter: brightness(.9); }
+/* in a narrow output pane the template menu gives way, not the buttons beside it */
+#tpl { min-width: 60px; flex: 1 1 auto; text-overflow: ellipsis; }
+.btn.dl { flex: none; }
+.outbar { container-type: inline-size; }
+@container (max-width: 480px) { #download { font-size: 0; gap: 0; padding: 0 9px; } }
 .ibtn { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; padding: 0; flex: none; }
 .ibtn:hover { background: var(--hover); color: var(--fg); }
 select { font-family: var(--mono); font-size: 12px; }
@@ -74,6 +79,15 @@ main { flex: 1; min-height: 0; position: relative; display: grid; grid-template-
 .resizing iframe { pointer-events: none; }
 .phead { height: 40px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 6px 0 14px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
 .phead .title { font-weight: 600; }
+/* the header never widens its pane: in a narrow output pane the title goes and the modes scroll */
+.phead { overflow: hidden; }
+#p-out .phead { container-type: inline-size; }
+@container (max-width: 560px) { #p-out .phead .title { display: none; } }
+#modes { flex: 0 1 auto; overflow-x: auto; scrollbar-width: none; }
+#modes::-webkit-scrollbar { display: none; }
+#modes button { flex: none; }
+/* scrolled to the end, the last mode keeps the bar's inner padding */
+#modes > :last-child { margin-right: 2px; }
 .phead .spacer, .subbar .spacer { flex: 1; }
 .rail-label { display: none; }
 .subbar { height: 38px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 16px; border-bottom: 1px solid var(--line-2); background: var(--panel); font-size: 12px; color: var(--muted); }
@@ -98,6 +112,13 @@ main { flex: 1; min-height: 0; position: relative; display: grid; grid-template-
 .dot.err { background: var(--err); }
 @keyframes pulse { 50% { opacity: .3; } }
 #status { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+/* enlarged output: the pane over the whole window */
+#p-out.enlarged { position: fixed; inset: 0; z-index: 300; border-left: 0; }
+#p-out.enlarged .splitter, #p-out.enlarged .cmdfoot, #p-out.enlarged #t-out { display: none; }
+#p-out.enlarged #out.stage { padding: 0; }
+#p-out.enlarged #out .paper { max-width: none; border-radius: 0; box-shadow: none; }
+#enlarge[aria-pressed=true] { color: var(--accent); }
 
 /* collapsed rails: files and output */
 #explorer.collapsed, #p-out.collapsed { cursor: pointer; background: var(--panel-2); }

@@ -1,7 +1,9 @@
 // ── collapsing: files and output fold to a labelled rail ──────────────────
 import { $ } from './dom.ts';
+import { ENLARGE, SHRINK } from './icons.ts';
 
 const open = { tree: true, out: true };
+let enlarged = false;
 
 // ── splitting: share of the source + output width taken by the output ────
 const SPLIT = 'opm-split';
@@ -12,6 +14,18 @@ function apply(): void {
   $('main').style.setProperty('--cols', `${open.tree ? '248px' : '40px'} minmax(0, ${open.out ? 1 - split : 1}fr) ${out}`);
   $('explorer').classList.toggle('collapsed', !open.tree);
   $('p-out').classList.toggle('collapsed', !open.out);
+  // ── enlarging: the output pane over the whole window ──
+  $('p-out').classList.toggle('enlarged', enlarged);
+  const btn = $('enlarge');
+  btn.innerHTML = enlarged ? SHRINK : ENLARGE;
+  btn.title = enlarged ? 'Back to the editor (Esc)' : 'Enlarge output to the whole window';
+  btn.setAttribute('aria-pressed', String(enlarged));
+}
+
+function setEnlarged(on: boolean): void {
+  enlarged = on;
+  if (on) open.out = true;
+  apply();
 }
 
 function initSplitter(): void {
@@ -39,6 +53,9 @@ export function initLayout(): void {
     // a click anywhere on a collapsed rail opens it again
     $(box).addEventListener('click', e => { if (!open[key] && (e.target as Element).closest('#' + box) === $(box)) { open[key] = true; apply(); } });
   }
+  $('enlarge').onclick = () => setEnlarged(!enlarged);
+  // Esc inside the preview frame never reaches this page; the button is always there to leave
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && enlarged && !document.querySelector('dialog[open]')) setEnlarged(false); });
   initSplitter();
   apply();
 }
