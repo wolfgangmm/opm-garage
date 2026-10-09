@@ -24,5 +24,9 @@ export function convert(root: string, xml: string, mode: Mode): string | Uint8Ar
   return typeof result === 'string' ? result : result.toJs();
 }
 
+export interface ChunkRun { files: string[]; landing: string }
+/** Chunk root/xml into HTML pages below the absolute folder out. */
+export const chunk = (root: string, xml: string, out: string): ChunkRun => JSON.parse(fn<[string, string, string], string>('chunk')(root, xml, out));
+
 /** Text of an ODD shipped with opm, such as teipublisher.odd, or undefined. */
 export const packagedOdd = (name: string): string | undefined => fn<[string], string | undefined>('packaged_odd_text')(name) ?? undefined;

@@ -46,6 +46,23 @@ def convert(root, xml, mode):
     return Project.load(root / 'opm.toml').transform(root / xml, mode=mode)
 
 
+def chunk(root, xml, out):
+    """Chunk root/xml into HTML pages below out; returns the files written and the page to open first."""
+    root = Path(root)
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    project = Project.load(root / 'opm.toml')
+    if not project.config.chunking:
+        raise ValueError('This project has no [chunking] section in opm.toml, so there is nothing to chunk.')
+    out = Path(out)
+    project.chunk(root / xml, format='html', output_dir=out, overwrite=True)
+    files = sorted(str(p.relative_to(out)) for p in out.rglob('*') if p.is_file())
+    # as `opm chunk --preview` does: the site index, else the first numbered page
+    landing = 'index.html' if 'index.html' in files else next(
+        (f for f in files if f.endswith('.html')), '')
+    return json.dumps({'files': files, 'landing': landing})
+
+
 def packaged_odd_text(name):
     """Text of an ODD shipped with opm (e.g. teipublisher.odd), or None."""
     from opm.resources import packaged_odd

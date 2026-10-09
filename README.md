@@ -31,6 +31,8 @@ Every push to `main` deploys to GitHub Pages (`.github/workflows/pages.yml`). Th
     tests/unit/           node:test tests for the pure modules
     tests/node/           headless Pyodide runs of the wheel
 
+The `chunk` output mode runs `opm chunk` and writes the pages to `/tmp/opm-chunks/` in Pyodide, outside the project. `src/ui/previews/site.ts` copies them into Cache Storage under `preview/<run>/`, and `sw.js` serves that path to the preview frame as a static server would.
+
 Panes never call each other. An action changes `state` and emits what changed (`project`, `files`, `config`, `edit`, `file`, `source`); each pane subscribes to the events that affect it in its `init…()` function.
 
 ## License

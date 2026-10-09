@@ -1,9 +1,11 @@
 // ── output pane: mode tabs, template menu, transform and result ───────────
 import { setMode } from '../actions.ts';
-import { EXT, MODES, PREVIEW, TEMPLATE_KIND, type Mode } from '../config.ts';
+import { EXT, MODE_INFO, MODES, PREVIEW, TEMPLATE_KIND, type Mode } from '../config.ts';
 import { base, config, oddPath, projectFiles, readText, writeFile } from '../project/fs.ts';
 import { setToml, tomlString, unsetToml } from '../project/toml.ts';
-import { convert, ready } from '../runtime/opm.ts';
+import { chunk, convert, ready } from '../runtime/opm.ts';
+import { py } from '../runtime/pyodide.ts';
+import { toZip } from '../project/zip.ts';
 import { emit, on, state } from '../state.ts';
 import type { EditorView } from 'codemirror';
 import { createViewer, type EditorKind } from './codemirror.ts';
@@ -11,9 +13,13 @@ import { $, download, el } from './dom.ts';
 import { DOWNLOAD } from './icons.ts';
 import { markdownFrame } from './previews/markdown.ts';
 import { compilePdf } from './previews/pdf.ts';
+import { framePage, publishSite, servedByWorker } from './previews/site.ts';
 import { setStatus } from './status.ts';
+import { tip } from './tip.ts';
 
-interface Result { mode: Mode; name: string; result: string | Uint8Array }
+/** Chunked output: the pages opm wrote to `out`, served from `base` by the service worker. */
+interface Site { out: string; files: string[]; landing: string; base: string }
+interface Result { mode: Mode; name: string; result: string | Uint8Array | Site }
 let last: Result | null = null;
 /** Bumped by every result shown, so a slow preview (PDF, Markdown) cannot overwrite a newer one. */
 let seq = 0;
@@ -46,7 +52,7 @@ async function run(): Promise<void> {
   await new Promise(r => setTimeout(r, 30)); // let the UI paint
   const t = performance.now();
   try {
-    last = { mode: state.mode, name: base(state.xml), result: convert(state.dir, state.xml, state.mode) };
+    last = { mode: state.mode, name: base(state.xml), result: state.mode === 'chunk' ? await chunkSite() : convert(state.dir, state.xml, state.mode) };
     showResult(last);
     setStatus('Up to date · ' + Math.round(performance.now() - t) + ' ms');
   } catch (err) {
@@ -56,6 +62,13 @@ async function run(): Promise<void> {
   }
   running = false;
   if (again) void run();
+}
+
+/** Chunk the source outside the project folder, so its pages are not saved or synced as project files. */
+async function chunkSite(): Promise<Site> {
+  const out = '/tmp/opm-chunks/' + state.project;
+  const { files, landing } = chunk(state.dir, state.xml, out);
+  return { out, files, landing, base: await publishSite(files, p => py.FS.readFile(out + '/' + p)) };
 }
 
 // ── result ────────────────────────────────────────────────────────────────
@@ -83,6 +96,7 @@ function showOnPaper(frame: HTMLIFrameElement): void {
 }
 
 function showResult({ mode, name, result }: Result): void {
+  if (typeof result === 'object' && 'base' in result) { showSite(name, result); return; }
   // keep the scroll position when the same file is regenerated
   const key = mode + ':' + name;
   const scroll = viewer && viewerKey === key ? viewer.scrollSnapshot() : null;
@@ -109,6 +123,28 @@ function showResult({ mode, name, result }: Result): void {
   } else {
     showSource(result, mode, key, scroll);
   }
+}
+
+let site: { frame: HTMLIFrameElement; base: string } | null = null;
+
+/** Show the chunked pages, staying on the page the reader had open if it still exists. */
+function showSite(name: string, s: Site): void {
+  const page = site && framePage(site.frame, site.base);
+  viewer?.destroy(); viewer = null;
+  clearOut();
+  const file = name.replace(/\.[^.]+$/, '') + '-site.zip';
+  setDownload(file, () => {
+    const files = Object.fromEntries(s.files.map(p => [p, py.FS.readFile(s.out + '/' + p) as Uint8Array]));
+    download(file, toZip(files) as BlobPart, 'application/zip');
+  });
+  const frame = el('iframe', { src: s.base + (page && s.files.includes(page) ? page : s.landing) });
+  const my = seq;
+  frame.addEventListener('load', () => {
+    if (my === seq && !servedByWorker(frame)) showError('The preview frame bypassed the service worker, so the chunked pages could not be served. '
+      + 'This happens after a hard reload, or with “Bypass for network” on in the developer tools. Reload the page normally.');
+  }, { once: true });
+  site = { frame, base: s.base };
+  showOnPaper(frame);
 }
 
 /** Beyond this size highlighting costs more than it helps; fall back to plain text. */
@@ -171,7 +207,9 @@ function refreshTemplates(): void {
 
 function updateCommand(): void {
   if (!state.project) { $('cmd').textContent = ''; $('warn').hidden = true; return; }
-  $('cmd').textContent = `$ opm transform ${state.xml || '<no XML source>'} -t ${state.mode} -o output.${EXT[state.mode]}`;
+  $('cmd').textContent = state.mode === 'chunk'
+    ? `$ opm chunk ${state.xml || '<no XML source>'} --force --preview`
+    : `$ opm transform ${state.xml || '<no XML source>'} -t ${state.mode} -o output.${EXT[state.mode]}`;
   const w = mismatch();
   $('warn').hidden = !w; $('warn').textContent = w;
 }
@@ -192,6 +230,7 @@ export function initOutput(): void {
   for (const m of MODES) {
     const b = el('button', { textContent: m, onclick: () => setMode(m) });
     b.dataset.mode = m;
+    tip(b, ...MODE_INFO[m]);
     $('modes').append(b);
   }
   const view = $('view');

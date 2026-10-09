@@ -18,3 +18,14 @@ for (const m of ['web','markdown','json','docx','typst','epub']) {
   try { console.log(m, await py.runPythonAsync(`r=p.transform(etree.parse('/tmp/doc.xml'), mode='${m}'); f"{type(r).__name__} {len(r)}"`)); }
   catch (e) { console.log(m, 'FAIL', String(e).split('\n').slice(-2).join(' ')); }
 }
+
+// chunked output through glue.py, as the chunk mode calls it
+py.runPython(fs.readFileSync('src/runtime/glue.py', 'utf8'));
+for (const ex of ['jats', 'shakespeare']) {
+  const sample = py.globals.get('copy_example')('/proj-' + ex, ex, true);
+  const run = JSON.parse(py.globals.get('chunk')('/proj-' + ex, sample, '/tmp/chunks-' + ex));
+  const pages = run.files.filter(f => f.endsWith('.html'));
+  if (run.landing !== 'index.html' || pages.length < 2 || !run.files.includes(run.landing)) {
+    console.log('chunk', ex, 'FAIL', JSON.stringify(run).slice(0, 300)); process.exitCode = 1;
+  } else console.log('chunk', ex, `${pages.length} pages, ${run.files.length} files`);
+}
