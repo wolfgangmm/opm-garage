@@ -30,14 +30,20 @@ export function closeTab(p: string): void {
 }
 
 export function setMode(mode: typeof state.mode): void {
-  state.mode = mode;
+  state.mode = mode; state.docs = '';
   emit('source');
+}
+
+/** Show the documentation site of an ODD in the output pane, rebuilt each time. '' goes back to the output. */
+export function documentOdd(odd: string): void {
+  state.docs = odd;
+  emit('docs');
 }
 
 export async function openProject(name: string, files: ProjectFiles, meta: ProjectMeta = {}): Promise<void> {
   await persistNow();
   restore(name, files);
-  state.project = name; state.open = []; state.file = '';
+  state.project = name; state.open = []; state.file = ''; state.docs = '';
   state.xml = meta.xml && exists(meta.xml) ? meta.xml : firstXml();
   state.mode = isMode(meta.mode) ? meta.mode : 'web';
   state.folder = meta.folder ?? null; state.baseline = meta.sync ?? {}; state.conflicts = [];

@@ -62,7 +62,7 @@ function render(): void {
   btn.dataset.state = state.sync;
   $('sync-name').textContent = state.folder!.name;
   $('sync-state').textContent = LABEL[state.sync];
-  btn.title = state.sync === 'permission' ? 'Allow access to the folder again to resume syncing'
+  btn.dataset.tip = state.sync === 'permission' ? 'Allow access to the folder again to resume syncing'
     : state.sync === 'conflict' ? 'Some files changed both here and on disk'
     : 'Synced with the folder ' + state.folder!.name;
   if (state.sync === 'conflict' && conflictKey() !== postponed) showConflicts();

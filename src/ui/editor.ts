@@ -1,5 +1,5 @@
 // ── source editor: tabs, breadcrumbs, CodeMirror or a binary preview ──────
-import { closeTab, openFile } from '../actions.ts';
+import { closeTab, documentOdd, openFile } from '../actions.ts';
 import { IMAGES } from '../config.ts';
 import { base, dirOf, exists, extOf, isOdd, normPath, readBytes, readText, writeFile } from '../project/fs.ts';
 import { roleOf } from '../project/pipeline.ts';
@@ -100,10 +100,12 @@ function showBinary(p: string): void {
 
 function renderTabs(): void {
   $('tabs').replaceChildren(...state.open.map(p => {
-    const b = el('button', { className: 'tab', title: p });
+    const b = el('button', { className: 'tab' });
+    b.dataset.tip = p;
     b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(p === state.file));
-    b.append(el('span', { className: 'ico', textContent: icon(p) }), el('span', { className: 'lbl', textContent: base(p) }),
-      el('span', { className: 'x', title: 'Close', textContent: '×' }));
+    const x = el('span', { className: 'x', textContent: '×' });
+    x.dataset.tip = 'Close';
+    b.append(el('span', { className: 'ico', textContent: icon(p) }), el('span', { className: 'lbl', textContent: base(p) }), x);
     b.onclick = e => { if ((e.target as Element).classList.contains('x')) closeTab(p); else openFile(p); };
     return b;
   }));
@@ -127,6 +129,7 @@ function renderKind(): void {
   const odd = $('oddview');
   odd.hidden = !isOdd(p);
   $('fmt').hidden = !isOdd(p) || state.oddView === 'visual';
+  $('odd-doc').hidden = !isOdd(p);
   for (const b of odd.children) b.setAttribute('aria-pressed', String((b as HTMLElement).dataset.v === state.oddView));
 }
 
@@ -138,6 +141,7 @@ export function initEditor(): void {
     // opm.toml and ODDs decide the pipeline; other files only change the output
     emit(state.file === 'opm.toml' || extOf(state.file) === 'odd' ? 'config' : 'edit', 'edit');
   });
+  $('odd-doc').onclick = () => { if (state.file) { oddEditor.flush(); documentOdd(state.file); } };
   $('fmt').onclick = () => { if (state.file) editor.replace(formatOdd(editor.getValue())); };
   oddEditor = $<OddEditor>('oddvis');
   for (const b of $('oddview').children as HTMLCollectionOf<HTMLElement>) b.onclick = () => setOddView(b.dataset.v as typeof state.oddView);

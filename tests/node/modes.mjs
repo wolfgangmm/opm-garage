@@ -29,3 +29,18 @@ for (const ex of ['jats', 'shakespeare']) {
     console.log('chunk', ex, 'FAIL', JSON.stringify(run).slice(0, 300)); process.exitCode = 1;
   } else console.log('chunk', ex, `${pages.length} pages, ${run.files.length} files`);
 }
+
+// ODD documentation through glue.py, as the ODD editor's Document button calls it
+for (const [ex, odd] of [['jats', 'odd/jats.odd'], ['shakespeare', null]]) {
+  const dir = '/proj-' + ex;
+  const target = odd ?? py.runPython(`next(str(p.relative_to('${dir}')) for p in __import__('pathlib').Path('${dir}').rglob('*.odd'))`);
+  const t = performance.now();
+  let run = JSON.parse(py.globals.get('document_odd')(dir, target, '/tmp/doc-' + ex));
+  if (run.needTei) {
+    py.globals.get('install_tei')(new Uint8Array(fs.readFileSync('dist/p5all.xml.gz')));
+    run = JSON.parse(py.globals.get('document_odd')(dir, target, '/tmp/doc-' + ex));
+  }
+  const pages = (run.files ?? []).filter(f => f.endsWith('.html'));
+  if (!run.landing || pages.length < 2) { console.log('odd document', target, 'FAIL', JSON.stringify(run).slice(0, 300)); process.exitCode = 1; }
+  else console.log('odd document', target, `${pages.length} pages, landing ${run.landing}, ${Math.round(performance.now() - t)} ms`);
+}

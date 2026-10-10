@@ -130,18 +130,18 @@ export class ElementSpecPanel extends LitElement {
           </select>
         </label>
         <span class="spacer"></span>
-        <button title="Add model" @click=${() => addModel("model")}>+ model</button>
-        <button title="Add modelSequence" @click=${() => addModel("modelSequence")}>+ sequence</button>
-        <button title="Add modelGrp" @click=${() => addModel("modelGrp")}>+ group</button>
+        <button data-tip="Add model" @click=${() => addModel("model")}>+ model</button>
+        <button data-tip="Add modelSequence" @click=${() => addModel("modelSequence")}>+ sequence</button>
+        <button data-tip="Add modelGrp" @click=${() => addModel("modelGrp")}>+ group</button>
         <button
           class="icon"
-          title="Copy elementSpec"
+          aria-label="Copy elementSpec"
           @click=${() => copyElementSpec(spec)}
         >${COPY}</button>
         ${hasModelClip()
           ? html`<button
               class="icon"
-              title="Paste model"
+              aria-label="Paste model"
               @click=${() => {
                 const c = pasteModel();
                 if (c) {
@@ -151,7 +151,7 @@ export class ElementSpecPanel extends LitElement {
               }}
             >${PASTE}</button>`
           : nothing}
-        <button class="icon danger" title="Delete element" @click=${() => this.onDelete?.()}>${TRASH}</button>
+        <button class="icon danger" aria-label="Delete element" @click=${() => this.onDelete?.()}>${TRASH}</button>
       </div>
 
       ${spec.hasUnmodeled

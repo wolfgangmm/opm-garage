@@ -199,15 +199,15 @@ export class OddEditor extends LitElement {
             type="text"
             list="odd-inheritable"
             placeholder="Add element…"
-            title=${options.length ? `Pick an element from ${model.meta.source} to override, or type a new one` : "Element name"}
+            data-tip=${options.length ? `Pick an element from ${model.meta.source} to override, or type a new one` : "Element name"}
             .value=${live(this.newIdent)}
             @input=${(e: Event) => (this.newIdent = (e.target as HTMLInputElement).value)}
             @keydown=${(e: KeyboardEvent) => { if (e.key === "Enter") this.addSpec(); }}
           />
           <datalist id="odd-inheritable">${options.map((id) => html`<option value=${id}></option>`)}</datalist>
-          <button class="ibtn" title="Add elementSpec" @click=${() => this.addSpec()}>${ADD}</button>
+          <button class="ibtn" aria-label="Add elementSpec" @click=${() => this.addSpec()}>${ADD}</button>
           ${hasElementSpecClip()
-            ? html`<button class="ibtn" title="Paste elementSpec" @click=${() => this.pasteSpec()}>${PASTE}</button>`
+            ? html`<button class="ibtn" aria-label="Paste elementSpec" @click=${() => this.pasteSpec()}>${PASTE}</button>`
             : nothing}
         </div>
         ${this.addError ? html`<div class="odd-add-error">${this.addError}</div>` : nothing}

@@ -24,12 +24,12 @@ function renderTree(): void {
     const row = el('div', { className: 'row' + (f.dir ? ' dir' : '') + (f.path === state.file ? ' sel' : '') });
     row.style.setProperty('--d', String(f.path.split('/').length - 1));
     row.dataset.path = f.path; row.dataset.dir = f.dir ? '1' : '';
-    row.innerHTML = '<span class="cr"></span><span class="tg"></span><span class="nm"></span><span class="rd"></span><span class="act"><button data-a="ren" title="Rename">✎</button><button data-a="del" title="Delete">✕</button></span>';
+    row.innerHTML = '<span class="cr"></span><span class="tg"></span><span class="nm"></span><span class="rd"></span><span class="act"><button data-a="ren" aria-label="Rename">✎</button><button data-a="del" aria-label="Delete">✕</button></span>';
     const [cr, tg, nm, rd] = row.children as unknown as HTMLElement[];
     cr.textContent = f.dir ? (collapsed.has(f.path) ? '▸' : '▾') : '';
     tg.textContent = f.dir ? '' : icon(f.path);
     nm.textContent = base(f.path);
-    if (role && role !== 'Project config') rd.title = role; else rd.remove();
+    if (role && role !== 'Project config') rd.dataset.tip = role; else rd.remove();
     row.onclick = e => {
       const a = (e.target as Element).closest('button')?.dataset.a;
       if (a === 'del') return void deleteEntry(f);
@@ -53,7 +53,8 @@ function renderPipeline(): void {
   if (TEMPLATE_KIND[state.mode]) rows.push(['Template', f.template, 'opm default']);
   for (const [role, p, none] of rows) {
     const there = !!p && exists(p);
-    const b = el('button', { className: 'pipe' + (!p ? ' off' : !there ? ' miss' : p === state.file ? ' on' : ''), title: p });
+    const b = el('button', { className: 'pipe' + (!p ? ' off' : !there ? ' miss' : p === state.file ? ' on' : '') });
+    if (p) b.dataset.tip = p;
     b.append(el('span', { className: 'r', textContent: role }),
       el('span', { className: 'n', textContent: p ? base(p) + (there ? '' : ' (missing)') : none }));
     if (there) b.onclick = () => openFile(p);

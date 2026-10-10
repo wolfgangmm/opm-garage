@@ -49,6 +49,11 @@ jobs:
             exit 1
           fi
 
+      # opm merges TEI customizations onto this schema; it downloads it itself, but the
+      # browser cannot (GitHub release files allow no cross-origin fetch), so it is served beside the wheel
+      - name: Fetch the TEI schema
+        run: curl -sSfL -o dist/p5all.xml.gz https://github.com/eeditiones/open-processing-model/releases/download/tei-data/p5all.xml.gz
+
       - run: npm run check
       - run: npm test
         env:
@@ -58,7 +63,7 @@ jobs:
         run: |
           mkdir -p _site/dist
           cp index.html style.css sw.js manifest.webmanifest icon.svg icon*.png _site/
-          cp dist/app.js dist/app.js.map dist/*.whl _site/dist/
+          cp dist/app.js dist/app.js.map dist/docworker.js dist/docworker.js.map dist/*.whl dist/p5all.xml.gz _site/dist/
           touch _site/.nojekyll
 
       - uses: actions/upload-pages-artifact@v3

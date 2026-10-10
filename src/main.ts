@@ -15,6 +15,7 @@ import { setStatus } from './ui/status.ts';
 import { initSwitcher } from './ui/switcher.ts';
 import { initSyncUi } from './ui/sync.ts';
 import { initTheme } from './ui/theme.ts';
+import { initTips } from './ui/tip.ts';
 import { initUploads } from './ui/uploads.ts';
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -23,6 +24,7 @@ initLayout();
 initEditor();
 initExplorer();
 initOutput();
+initTips();
 initUploads();
 initStart();
 initSwitcher();

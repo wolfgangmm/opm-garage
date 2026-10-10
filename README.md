@@ -33,7 +33,11 @@ Every push to `main` deploys to GitHub Pages (`.github/workflows/pages.yml`). Th
 
 The `chunk` output mode runs `opm chunk` and writes the pages to `/tmp/opm-chunks/` in Pyodide, outside the project. `src/ui/previews/site.ts` copies them into Cache Storage under `preview/<run>/`, and `sw.js` serves that path to the preview frame as a static server would.
 
-Panes never call each other. An action changes `state` and emits what changed (`project`, `files`, `config`, `edit`, `file`, `source`); each pane subscribes to the events that affect it in its `init…()` function.
+The ODD editor's Document button runs `opm odd document` on the open ODD. Because a TEI customization takes close to a minute, it runs in a Web Worker with its own Pyodide (`src/runtime/docworker.ts`, bundled as `dist/docworker.js`), and the site is shown through the same `preview/` route. opm merges TEI customizations onto `p5all.xml.gz`, which it would download from a GitHub release. The browser cannot fetch that cross-origin, so the Pages build puts it in `dist/` beside the wheel. For local development, download it once:
+
+    curl -sSfL -o dist/p5all.xml.gz https://github.com/eeditiones/open-processing-model/releases/download/tei-data/p5all.xml.gz
+
+Panes never call each other. An action changes `state` and emits what changed (`project`, `files`, `config`, `edit`, `file`, `source`, `sync`, `docs`); each pane subscribes to the events that affect it in its `init…()` function.
 
 ## License
 

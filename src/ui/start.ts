@@ -88,7 +88,7 @@ async function refreshProjectList(): Promise<void> {
   list.replaceChildren();
   for (const { name, updated } of await listProjects()) {
     const open = el('button', { className: 'btn', textContent: 'Open', onclick: () => void openSaved(name) });
-    const del = el('button', { className: 'btn', textContent: '✕', title: 'Delete' });
+    const del = el('button', { className: 'btn', textContent: '✕', ariaLabel: 'Delete' });
     del.onclick = async () => {
       if (!await confirmDelete('Delete project?', name, ' will be removed from this browser. Export it first if you want to keep a copy.')) return;
       await deleteProject(name);
@@ -109,7 +109,8 @@ function card(title: string, sub: string, onclick: () => void): HTMLButtonElemen
 
 /** Fill the example and vocabulary cards; needs the Python runtime. */
 export function renderCards(): void {
-  $('ex-cards').replaceChildren(...listExamples().map(e => card(e.title, e.summary, () => void createProject('example', e.name))));
+  // the ODD documentation example is left out: any ODD has the editor's Document button
+  $('ex-cards').replaceChildren(...listExamples().filter(e => e.name !== 'odd').map(e => card(e.title, e.summary, () => void createProject('example', e.name))));
   $('new-cards').replaceChildren(...listVocabularies().map(([v, label]) => card(label, 'stub ODD, templates, sample document', () => void createProject('vocab', v))));
 }
 

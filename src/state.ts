@@ -27,10 +27,12 @@ export interface AppState {
   sync: 'idle' | 'busy' | 'permission' | 'conflict' | 'error';
   /** Files changed differently in the browser and on disk, waiting for the user. */
   conflicts: Conflict[];
+  /** The ODD whose documentation site the output pane shows instead of the transform, if any. */
+  docs: string;
 }
 
 export const state: AppState = { project: null, dir: '', open: [], file: '', xml: '', mode: 'web', view: 'rendered', oddView: 'visual',
-  folder: null, baseline: {}, sync: 'idle', conflicts: [] };
+  folder: null, baseline: {}, sync: 'idle', conflicts: [], docs: '' };
 
 /**
  * - `project`: a project was opened or closed
@@ -40,8 +42,9 @@ export const state: AppState = { project: null, dir: '', open: [], file: '', xml
  * - `file`: another file is shown, or the open tabs changed
  * - `source`: the XML document or output mode changed
  * - `sync`: the folder link or its sync status changed
+ * - `docs`: the output pane should show (or stop showing) an ODD's documentation
  */
-export type AppEvent = 'project' | 'files' | 'config' | 'edit' | 'file' | 'source' | 'sync';
+export type AppEvent = 'project' | 'files' | 'config' | 'edit' | 'file' | 'source' | 'sync' | 'docs';
 
 const handlers = new Map<AppEvent, Set<() => void>>();
 

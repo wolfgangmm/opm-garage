@@ -1,9 +1,10 @@
 // ── output pane: mode tabs, template menu, transform and result ───────────
 import { setMode } from '../actions.ts';
-import { EXT, MODE_INFO, MODES, PREVIEW, TEMPLATE_KIND, type Mode } from '../config.ts';
-import { base, config, oddPath, projectFiles, readText, writeFile } from '../project/fs.ts';
+import { EXT, PREVIEW, TEMPLATE_KIND, type Mode } from '../config.ts';
+import { base, config, oddPath, projectFiles, readText, snapshot, writeFile } from '../project/fs.ts';
 import { setToml, tomlString, unsetToml } from '../project/toml.ts';
 import { chunk, convert, ready } from '../runtime/opm.ts';
+import { documentOdd } from '../runtime/docs.ts';
 import { py } from '../runtime/pyodide.ts';
 import { toZip } from '../project/zip.ts';
 import { emit, on, state } from '../state.ts';
@@ -15,10 +16,9 @@ import { markdownFrame } from './previews/markdown.ts';
 import { compilePdf } from './previews/pdf.ts';
 import { framePage, publishSite, servedByWorker } from './previews/site.ts';
 import { setStatus } from './status.ts';
-import { tip } from './tip.ts';
 
-/** Chunked output: the pages opm wrote to `out`, served from `base` by the service worker. */
-interface Site { out: string; files: string[]; landing: string; base: string }
+/** A folder of pages (chunked output, ODD documentation), served from `base` by the service worker. */
+interface Site { files: string[]; landing: string; base: string; read: (p: string) => Uint8Array; zip: string }
 interface Result { mode: Mode; name: string; result: string | Uint8Array | Site }
 let last: Result | null = null;
 /** Bumped by every result shown, so a slow preview (PDF, Markdown) cannot overwrite a newer one. */
@@ -39,7 +39,7 @@ function requestRun(): void {
 
 async function run(): Promise<void> {
   clearTimeout(timer);
-  if (!ready() || !state.project) return;
+  if (!ready() || !state.project || state.docs) return;
   if (!state.xml) {
     last = null; hideDownload();
     showError('This project has no XML source yet. Upload one, or add a file under data/.');
@@ -68,7 +68,47 @@ async function run(): Promise<void> {
 async function chunkSite(): Promise<Site> {
   const out = '/tmp/opm-chunks/' + state.project;
   const { files, landing } = chunk(state.dir, state.xml, out);
-  return { out, files, landing, base: await publishSite(files, p => py.FS.readFile(out + '/' + p)) };
+  const read = (p: string) => py.FS.readFile(out + '/' + p) as Uint8Array;
+  return { files, landing, read, zip: base(state.xml).replace(/\.[^.]+$/, '') + '-site.zip', base: await publishSite(files, read) };
+}
+
+// ── ODD documentation: built on request in a worker, shown in place of the output ──
+let documenting = false;
+
+async function runDocs(): Promise<void> {
+  const odd = state.docs;
+  if (documenting || !odd) return;
+  documenting = true;
+  viewer?.destroy(); viewer = null;
+  clearOut(); hideDownload();
+  const my = seq;
+  const label = el('div', { textContent: 'Starting…' }), bar = el('progress');
+  const box = el('div', { className: 'docs-progress' });
+  box.append(el('strong', { textContent: 'Documenting ' + odd }), label, bar,
+    el('p', { className: 'hint', textContent: 'A TEI customization is merged onto the whole TEI schema, which can take a minute. You can keep editing meanwhile.' }));
+  $('out').append(box);
+  setStatus('Documenting ' + base(odd) + '…', 'busy');
+  const t = performance.now();
+  try {
+    const docs = await documentOdd(snapshot(), odd, (text, done, total) => {
+      label.textContent = text + (total > 0 && total !== 100 ? ` · ${done} of ${total}` : '');
+      if (total > 0) { bar.max = total; bar.value = done; } else bar.removeAttribute('value');
+    });
+    const files = Object.keys(docs.files), read = (p: string) => docs.files[p];
+    const s: Site = { files, landing: docs.landing, read, zip: base(odd).replace(/\.[^.]+$/, '') + '-docs.zip', base: await publishSite(files, read) };
+    if (my === seq && state.docs === odd) {
+      showSite(s);
+      setStatus(`Documented · ${files.filter(f => f.endsWith('.html')).length} pages · ${Math.round((performance.now() - t) / 1000)} s`);
+    }
+  } catch (err) {
+    if (my === seq && state.docs === odd) {
+      showError('Could not document ' + odd + ':\n' + String((err as Error).message ?? err).split('\n').filter(Boolean).slice(-4).join('\n'));
+      setStatus('Error', 'err');
+    }
+  }
+  documenting = false;
+  // asked for again (another ODD, or the same after edits) while this one was running
+  if (state.docs && state.docs !== odd) void runDocs();
 }
 
 // ── result ────────────────────────────────────────────────────────────────
@@ -84,7 +124,7 @@ function showError(text: string): void {
 const hideDownload = () => { $('download').hidden = true; };
 function setDownload(file: string, onclick: () => void): void {
   const dl = $<HTMLButtonElement>('download');
-  dl.innerHTML = DOWNLOAD; dl.append(file); dl.title = 'Download ' + file; dl.hidden = false;
+  dl.innerHTML = DOWNLOAD; dl.append(file); dl.dataset.tip = 'Download ' + file; dl.hidden = false;
   dl.onclick = onclick;
 }
 
@@ -96,7 +136,7 @@ function showOnPaper(frame: HTMLIFrameElement): void {
 }
 
 function showResult({ mode, name, result }: Result): void {
-  if (typeof result === 'object' && 'base' in result) { showSite(name, result); return; }
+  if (typeof result === 'object' && 'base' in result) { showSite(result); return; }
   // keep the scroll position when the same file is regenerated
   const key = mode + ':' + name;
   const scroll = viewer && viewerKey === key ? viewer.scrollSnapshot() : null;
@@ -128,19 +168,15 @@ function showResult({ mode, name, result }: Result): void {
 let site: { frame: HTMLIFrameElement; base: string } | null = null;
 
 /** Show the chunked pages, staying on the page the reader had open if it still exists. */
-function showSite(name: string, s: Site): void {
+function showSite(s: Site): void {
   const page = site && framePage(site.frame, site.base);
   viewer?.destroy(); viewer = null;
   clearOut();
-  const file = name.replace(/\.[^.]+$/, '') + '-site.zip';
-  setDownload(file, () => {
-    const files = Object.fromEntries(s.files.map(p => [p, py.FS.readFile(s.out + '/' + p) as Uint8Array]));
-    download(file, toZip(files) as BlobPart, 'application/zip');
-  });
+  setDownload(s.zip, () => download(s.zip, toZip(Object.fromEntries(s.files.map(p => [p, s.read(p)]))) as BlobPart, 'application/zip'));
   const frame = el('iframe', { src: s.base + (page && s.files.includes(page) ? page : s.landing) });
   const my = seq;
   frame.addEventListener('load', () => {
-    if (my === seq && !servedByWorker(frame)) showError('The preview frame bypassed the service worker, so the chunked pages could not be served. '
+    if (my === seq && !servedByWorker(frame)) showError('The preview frame bypassed the service worker, so its pages could not be served. '
       + 'This happens after a hard reload, or with “Bypass for network” on in the developer tools. Reload the page normally.');
   }, { once: true });
   site = { frame, base: s.base };
@@ -189,10 +225,11 @@ function revealMode(): void {
 }
 
 function updateModeUi(): void {
-  for (const b of $('modes').children as HTMLCollectionOf<HTMLElement>) b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode));
+  for (const b of $('modes').children as HTMLCollectionOf<HTMLElement>) b.setAttribute('aria-pressed', String(!state.docs && b.dataset.mode === state.mode));
   requestAnimationFrame(revealMode);
-  $('out-mode').textContent = state.mode;
-  const view = $('view'), preview = PREVIEW.has(state.mode);
+  $('out-mode').textContent = state.docs ? 'documentation' : state.mode;
+  $('docs-bar').hidden = !state.docs; $('docs-odd').textContent = state.docs;
+  const view = $('view'), preview = PREVIEW.has(state.mode) && !state.docs;
   view.hidden = !preview;
   view.firstElementChild!.textContent = state.mode === 'typst' ? 'PDF' : 'Rendered';
   view.lastElementChild!.textContent = ({ markdown: 'Markdown', typst: 'Typst' } as Partial<Record<Mode, string>>)[state.mode] || 'HTML';
@@ -203,7 +240,7 @@ function updateModeUi(): void {
 
 // the template menu lists the project's own templates; its choice is written to opm.toml
 function refreshTemplates(): void {
-  const kind = TEMPLATE_KIND[state.mode];
+  const kind = state.docs ? undefined : TEMPLATE_KIND[state.mode];
   $('tpl-field').hidden = !kind || !state.project;
   if (!kind || !state.project) return;
   const sel = $<HTMLSelectElement>('tpl');
@@ -217,7 +254,8 @@ function refreshTemplates(): void {
 
 function updateCommand(): void {
   if (!state.project) { $('cmd').textContent = ''; $('warn').hidden = true; return; }
-  $('cmd').textContent = state.mode === 'chunk'
+  $('cmd').textContent = state.docs ? `$ opm odd document ${state.docs} --force --preview`
+    : state.mode === 'chunk'
     ? `$ opm chunk ${state.xml || '<no XML source>'} --force --preview`
     : `$ opm transform ${state.xml || '<no XML source>'} -t ${state.mode} -o output.${EXT[state.mode]}`;
   const w = mismatch();
@@ -237,12 +275,8 @@ function mismatch(): string {
 }
 
 export function initOutput(): void {
-  for (const m of MODES) {
-    const b = el('button', { textContent: m, onclick: () => setMode(m) });
-    b.dataset.mode = m;
-    tip(b, ...MODE_INFO[m]);
-    $('modes').append(b);
-  }
+  // the buttons and their descriptions are in index.html
+  for (const b of $('modes').children as HTMLCollectionOf<HTMLElement>) b.onclick = () => setMode(b.dataset.mode as Mode);
   new ResizeObserver(revealMode).observe($('modes'));
   const view = $('view');
   for (const b of view.children as HTMLCollectionOf<HTMLElement>) b.onclick = () => {
@@ -265,6 +299,9 @@ export function initOutput(): void {
     updateModeUi(); refreshTemplates(); updateCommand();
     if (state.project) requestRun(); else { last = null; clearOut(); hideDownload(); }
   });
+  $('docs-rebuild').onclick = () => void runDocs();
+  $('docs-close').onclick = () => setMode(state.mode);
+  on('docs', () => { updateModeUi(); refreshTemplates(); updateCommand(); if (state.docs) void runDocs(); else requestRun(); });
   on('source', () => { updateModeUi(); refreshTemplates(); updateCommand(); requestRun(); });
   on('files', () => { refreshTemplates(); updateCommand(); requestRun(); });
   on('config', () => { refreshTemplates(); updateCommand(); });

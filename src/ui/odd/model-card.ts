@@ -132,7 +132,7 @@ export class ModelCard extends LitElement {
           <span
             class="grip"
             draggable="true"
-            title="Drag to reorder"
+            data-tip="Drag to reorder"
             @click=${(e: Event) => e.stopPropagation()}
           >⠿</span>
           <span class="twisty">${this.isOpen() ? "▾" : "▸"}</span>
@@ -148,7 +148,7 @@ export class ModelCard extends LitElement {
             : nothing}
           <span class="spacer"></span>
           ${this.fires
-            ? html`<span class="fires" title="Applies to this output mode whenever no rule above it matches">default</span>`
+            ? html`<span class="fires" data-tip="Applies to this output mode whenever no rule above it matches">default</span>`
             : nothing}
           ${this.toolbar()}
         </div>
@@ -170,15 +170,15 @@ export class ModelCard extends LitElement {
     };
     return html`
       <span class="model-tools" @click=${(e: Event) => e.stopPropagation()}>
-        <button class="icon" title="Copy model" @click=${stop(() => copyModel(this.model))}>${COPY}</button>
+        <button class="icon" aria-label="Copy model" @click=${stop(() => copyModel(this.model))}>${COPY}</button>
         ${this.pasteableSibling()
           ? html`<button
               class="icon"
-              title="Paste model after this one"
+              aria-label="Paste model after this one"
               @click=${stop(() => this.onPaste?.(this.index))}
             >${PASTE}</button>`
           : nothing}
-        <button class="icon" title="Delete" @click=${stop(() => this.onRemove?.(this.index))}>${TRASH}</button>
+        <button class="icon" aria-label="Delete" @click=${stop(() => this.onRemove?.(this.index))}>${TRASH}</button>
       </span>`;
   }
 
@@ -267,7 +267,7 @@ export class ModelCard extends LitElement {
     }
     return html`<div
       class="schema-violation"
-      title="The ODD schema does not allow this on <${this.model
+      data-tip="The ODD schema does not allow this on <${this.model
         .type}>; it is dropped when this rule is saved."
     >
       ${render()}
@@ -328,22 +328,22 @@ export class ModelCard extends LitElement {
           <span class="tmpl-tools">
             <button
               type="button"
-              title="Select enclosing element"
+              aria-label="Select enclosing element"
               @click=${() => cmField()?.selectElement()}
             >&lt;|&gt;</button>
             <button
               type="button"
-              title="Enclose selection in a new element"
+              aria-label="Enclose selection in a new element"
               @click=${() => cmField()?.encloseWith()}
             >&lt;...&gt;</button>
             <button
               type="button"
-              title="Remove enclosing tags"
+              aria-label="Remove enclosing tags"
               @click=${() => cmField()?.removeEnclosing()}
             >&lt;X&gt;</button>
             <button
               type="button"
-              title="Insert content placeholder"
+              aria-label="Insert content placeholder"
               @click=${() => cmField()?.insert("[[content]]")}
             >[[…]]</button>
           </span>
@@ -371,7 +371,7 @@ export class ModelCard extends LitElement {
           <strong>Parameters</strong>
           <button
             class="icon"
-            title="Add parameter"
+            aria-label="Add parameter"
             @click=${() => {
               m.params.push({ name: "", value: "", set: false });
               this.changed();
@@ -405,7 +405,7 @@ export class ModelCard extends LitElement {
               </label>
               <button
                 class="icon"
-                title="Remove"
+                aria-label="Remove"
                 @click=${() => {
                   m.params.splice(i, 1);
                   this.changed();
@@ -427,7 +427,7 @@ export class ModelCard extends LitElement {
           ${m.renditions.length < limit
             ? html`<button
                 class="icon"
-                title="Add rendition"
+                aria-label="Add rendition"
                 @click=${() => {
                   m.renditions.push({ scope: undefined, css: "" });
                   this.changed();
@@ -458,7 +458,7 @@ export class ModelCard extends LitElement {
               </label>
               <button
                 class="icon"
-                title="Remove"
+                aria-label="Remove"
                 @click=${() => {
                   m.renditions.splice(i, 1);
                   this.changed();
@@ -485,14 +485,14 @@ export class ModelCard extends LitElement {
           <strong>Nested models</strong>
           ${allowed.map(
             (type) => html`<button
-              title="Add ${type}"
+              data-tip="Add ${type}"
               @click=${() => addModel(type)}
             >+ ${ADD_LABELS[type]}</button>`
           )}
           ${clip && allowed.includes(clip)
             ? html`<button
                 class="icon"
-                title="Paste ${clip}"
+                aria-label="Paste ${clip}"
                 @click=${() => {
                   const c = pasteModel();
                   if (c) {

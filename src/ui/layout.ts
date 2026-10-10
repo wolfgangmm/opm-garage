@@ -18,7 +18,7 @@ function apply(): void {
   $('p-out').classList.toggle('enlarged', enlarged);
   const btn = $('enlarge');
   btn.innerHTML = enlarged ? SHRINK : ENLARGE;
-  btn.title = enlarged ? 'Back to the editor (Esc)' : 'Enlarge output to the whole window';
+  btn.ariaLabel = enlarged ? 'Back to the editor (Esc)' : 'Enlarge output to the whole window';
   btn.setAttribute('aria-pressed', String(enlarged));
 }
 

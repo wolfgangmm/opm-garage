@@ -28,5 +28,13 @@ export interface ChunkRun { files: string[]; landing: string }
 /** Chunk root/xml into HTML pages below the absolute folder out. */
 export const chunk = (root: string, xml: string, out: string): ChunkRun => JSON.parse(fn<[string, string, string], string>('chunk')(root, xml, out));
 
+/** Build the documentation site for root/odd below out; null when the TEI schema must be installed first. */
+export function documentOdd(root: string, odd: string, out: string): ChunkRun | null {
+  const r = JSON.parse(fn<[string, string, string], string>('document_odd')(root, odd, out));
+  return r.needTei ? null : r;
+}
+/** Give opm the TEI schema (p5all.xml.gz) it would otherwise download. */
+export const installTei = fn<[gz: Uint8Array], void>('install_tei');
+
 /** Text of an ODD shipped with opm, such as teipublisher.odd, or undefined. */
 export const packagedOdd = (name: string): string | undefined => fn<[string], string | undefined>('packaged_odd_text')(name) ?? undefined;

@@ -67,6 +67,7 @@ select, .btn, input[type=text] { font: inherit; padding: 0 .6rem; height: 30px; 
 @container (max-width: 480px) { #download { font-size: 0; gap: 0; padding: 0 9px; } }
 .ibtn { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; padding: 0; flex: none; }
 .ibtn:hover { background: var(--hover); color: var(--fg); }
+.ibtn[hidden] { display: none; }
 select { font-family: var(--mono); font-size: 12px; }
 
 /* panes */
@@ -91,7 +92,11 @@ main { flex: 1; min-height: 0; position: relative; display: grid; grid-template-
 .phead .spacer, .subbar .spacer { flex: 1; }
 .rail-label { display: none; }
 .subbar { height: 38px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 16px; border-bottom: 1px solid var(--line-2); background: var(--panel); font-size: 12px; color: var(--muted); }
-#kind { color: var(--faint); white-space: nowrap; }
+#kind { color: var(--faint); white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* in a narrow editor the file's details give way to its buttons */
+#p-src .subbar { container-type: inline-size; }
+#p-src .subbar .btn { flex: none; }
+@container (max-width: 560px) { #kind { display: none; } }
 #crumbs { display: flex; align-items: center; gap: 5px; min-width: 0; white-space: nowrap; overflow: hidden; }
 #crumbs .sl { color: var(--line); }
 #crumbs .last { color: var(--fg); }
@@ -112,6 +117,15 @@ main { flex: 1; min-height: 0; position: relative; display: grid; grid-template-
 .dot.err { background: var(--err); }
 @keyframes pulse { 50% { opacity: .3; } }
 #status { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+/* ODD documentation in the output pane */
+#docs-bar { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; }
+#docs-bar[hidden] { display: none; }
+#docs-bar code { font: 12px var(--mono); color: var(--fg); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.docs-progress { margin: auto; width: min(360px, 90%); display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--muted); }
+.docs-progress strong { color: var(--fg); font-weight: 600; }
+.docs-progress progress { width: 100%; accent-color: var(--accent); }
+.docs-progress .hint { margin: 0; font-size: 12px; }
 
 /* enlarged output: the pane over the whole window */
 #p-out.enlarged { position: fixed; inset: 0; z-index: 300; border-left: 0; }
